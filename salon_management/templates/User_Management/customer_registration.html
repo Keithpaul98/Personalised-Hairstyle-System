@@ -1,0 +1,83 @@
+<html>
+<head>
+    <title>Customer Registration</title>
+</head>
+<body>
+    <h1>Customer Registration</h1>
+    <form method="post">
+        {% csrf_token %}
+        <label for="username">Username:</label>
+        <input type="text" name="user_name" id="user_name" required>
+        <br>
+        <label for="email">Email:</label>
+        <input type="email" name="email" id="email" required>
+        <br>
+       <label for = "password">Password:</label>
+        <input type="password" name="password" id="password" required>
+        <br>
+        <label for = "confirm_password">Confirm Password:</label>
+        <input type="password" name="confirm_password" id="confirm_password" required>
+        <br>
+        <input type="submit" value="Register">
+    </form>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        form {
+            max-width: 400px;
+            margin: auto;
+            padding: 1em;
+            border: 1px solid #ccc;
+            border-radius: 1em;
+        }
+        label {
+            margin-top: 1em;
+            display: block;
+        }
+        input {
+            width: 100%;
+            padding: 0.5em;
+            margin-top: 0.5em;
+        }
+        input[type="submit"] {
+            width: auto;
+            padding: 0.7em 1.5em;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 0.3em;
+            cursor: pointer;
+        }
+        input[type="submit"]:hover {
+            background-color: #0056b3;
+        }
+        .error {
+            color: red;
+            margin-top: 0.5em;
+        }
+    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    {% if form.errors %}
+        <div class="error">
+            <p>Please correct the following errors:</p>
+            <ul>
+                {% for field in form %}
+                    {% for error in field.errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+</body>
+</html>
+{% if messages %}
+    <div class="success">
+        <ul>
+            {% for message in messages %}
+                <li>{{ message }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+{% endif %}
