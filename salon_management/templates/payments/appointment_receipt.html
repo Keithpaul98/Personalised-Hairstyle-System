@@ -1,0 +1,132 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">
+                        <i class="fas fa-receipt mr-2"></i>Appointment Receipt
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <!-- Receipt Header -->
+                    <div class="text-center mb-4">
+                        <h4>Impact Looks Salon</h4>
+                        <p class="mb-0">123 Style Street</p>
+                        <p class="mb-0">Beauty City, BC 12345</p>
+                        <p>Tel: (123) 456-7890</p>
+                    </div>
+                    
+                    <hr>
+                    
+                    <!-- Receipt Details -->
+                    <div class="row mb-4">
+                        <div class="col-6">
+                            <p><strong>Receipt #:</strong><br>{{ receipt.receipt_number }}</p>
+                            <p><strong>Date:</strong><br>{{ receipt.created_at|date:"F d, Y" }}</p>
+                            <p><strong>Time:</strong><br>{{ receipt.created_at|time:"g:i A" }}</p>
+                        </div>
+                        <div class="col-6">
+                            <p><strong>Customer:</strong><br>{% if receipt.customer.get_full_name %}{{ receipt.customer.get_full_name }}{% else %}{{ receipt.customer.username }}{% endif %}</p>
+                            <p><strong>Payment Method:</strong><br>{{ receipt.payment_method }}</p>
+                            <p><strong>Status:</strong><br>
+                                <span class="badge badge-success">Paid</span>
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- Appointment Details -->
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Service</th>
+                                    <th>Stylist</th>
+                                    <th>Appointment Date & Time</th>
+                                    <th class="text-right">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>{{ receipt.appointment.service.name }}</td>
+                                    <td>{{ receipt.appointment.stylist.get_full_name }}</td>
+                                    <td>{{ receipt.appointment.date|date:"M d, Y" }}<br>
+                                        {{ receipt.appointment.time|time:"g:i A" }}</td>
+                                    <td class="text-right">${{ receipt.total_amount }}</td>
+                                </tr>
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <th colspan="3" class="text-right">Total:</th>
+                                    <th class="text-right">${{ receipt.total_amount }}</th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    
+                    <!-- Add this after the payment details -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header bg-primary text-white">
+                                    <h5 class="mb-0"><i class="fas fa-crown mr-2"></i>Loyalty Status</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="loyalty-info p-3 bg-light rounded">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <span>Points Earned:</span>
+                                            <span class="badge badge-primary badge-pill">{{ points_earned }}</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <span>Current Points Balance:</span>
+                                            <span class="badge badge-primary badge-pill">{{ loyalty_points }}</span>
+                                        </div>
+                                        {% if discount > 0 %}
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span>Discount Earned:</span>
+                                            <span class="badge badge-success badge-pill">{{ discount }}%</span>
+                                        </div>
+                                        {% if discount_expiry %}
+                                        <small class="text-muted d-block mt-2">
+                                            Valid until {{ discount_expiry|date:"D, M d, Y" }}
+                                        </small>
+                                        {% endif %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Footer -->
+                    <div class="text-center mt-4">
+                        <p class="mb-1">Thank you for choosing Impact Looks Salon!</p>
+                        <p class="small text-muted">This is your official receipt. Please keep it for your records.</p>
+                    </div>
+                    
+                    <!-- Actions -->
+                    <div class="text-center mt-4">
+                        <a href="{% url 'payments:download_appointment_receipt' receipt.id %}" class="btn btn-primary">
+                            <i class="fas fa-download mr-2"></i>Download PDF
+                        </a>
+                        <button onclick="window.print()" class="btn btn-secondary ml-2">
+                            <i class="fas fa-print mr-2"></i>Print Receipt
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .loyalty-info {
+        border-left: 4px solid var(--primary);
+    }
+    .badge-pill {
+        padding: 0.5em 1em;
+    }
+</style>
+{% endblock %}

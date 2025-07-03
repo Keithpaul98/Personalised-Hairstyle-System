@@ -1,0 +1,274 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Receive Items - PO #{{ order.id }}{% endblock title %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Receive Items - Purchase Order #{{ order.id }}</h2>
+        <a href="{% url 'Stock_Management:purchase_order_detail' order_id=order.id %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Order
+        </a>
+    </div>
+
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+        <div class="alert alert-{% if message.tags == 'success' %}success{% elif message.tags == 'error' %}danger{% else %}info{% endif %} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Order Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Supplier:</strong> {{ order.supplier.name }}</p>
+                            <p><strong>Order Date:</strong> {{ order.order_date|date:"d M Y" }}</p>
+                            <p><strong>Expected Delivery:</strong> {{ order.expected_delivery_date|date:"d M Y"|default:"Not specified" }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Status:</strong> 
+                                {% if order.status == 'ordered' %}
+                                <span class="badge bg-primary">Ordered</span>
+                                {% elif order.status == 'partial' %}
+                                <span class="badge bg-warning">Partially Received</span>
+                                {% endif %}
+                            </p>
+                            <p><strong>Total Items:</strong> {{ order.items.count }}</p>
+                            <p><strong>Total Amount:</strong> ${{ order.total_amount }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <form method="post" id="receive-form" novalidate>
+                {% csrf_token %}
+                <div class="card">
+                    <div class="card-header bg-light">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Receive Items</h5>
+                            <div>
+                                <button type="button" id="receive-all" class="btn btn-sm btn-outline-success">
+                                    <i class="fas fa-check-double"></i> Receive All Remaining
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        {% if formset.non_form_errors %}
+                        <div class="alert alert-danger">
+                            {{ formset.non_form_errors }}
+                        </div>
+                        {% endif %}
+                        
+                        {{ formset.management_form }}
+                        
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Product</th>
+                                        <th>Ordered</th>
+                                        <th>Already Received</th>
+                                        <th>Remaining</th>
+                                        <th>Receiving Now</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for form in formset %}
+                                    {% with item=form.instance %}
+                                    <tr class="{% if item.quantity_ordered == item.quantity_received %}table-success{% endif %}">
+                                        <td>
+                                            {{ item.product.name }}
+                                            <small class="text-muted d-block">{{ item.product.category.name }}</small>
+                                            {{ form.id }}
+                                            {{ form.purchase_order }}
+                                            {{ form.product }}
+                                        </td>
+                                        <td>{{ item.quantity_ordered }}</td>
+                                        <td>{{ item.quantity_received }}</td>
+                                        <td class="remaining-qty">{{ item.quantity_ordered|sub:item.quantity_received }}</td>
+                                        <td>
+                                            {% if item.quantity_ordered > item.quantity_received %}
+                                            <div class="input-group">
+                                                {{ form.quantity_received.errors }}
+                                                <input type="number" name="{{ form.quantity_received.html_name }}" 
+                                                       id="{{ form.quantity_received.id_for_label }}" 
+                                                       class="form-control receive-qty {% if form.quantity_received.errors %}is-invalid{% endif %}" 
+                                                       value="0" 
+                                                       min="0" 
+                                                       max="{{ item.quantity_ordered|sub:item.quantity_received }}"
+                                                       data-max="{{ item.quantity_ordered|sub:item.quantity_received }}">
+                                            </div>
+                                            {% else %}
+                                            <span class="badge bg-success">Fully Received</span>
+                                            <input type="hidden" name="{{ form.quantity_received.html_name }}" value="0">
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endwith %}
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="5" class="text-center">No items to receive.</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="form-group mt-3">
+                            <label for="{{ notes_form.notes.id_for_label }}">Receipt Notes:</label>
+                            {{ notes_form.notes.errors }}
+                            <textarea name="{{ notes_form.notes.name }}" id="{{ notes_form.notes.id_for_label }}" 
+                                      class="form-control {% if notes_form.notes.errors %}is-invalid{% endif %}" 
+                                      rows="3" placeholder="Enter any notes about this receipt...">{{ notes_form.notes.value|default:'' }}</textarea>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'Stock_Management:purchase_order_detail' order_id=order.id %}" class="btn btn-outline-secondary">
+                                Cancel
+                            </a>
+                            <button type="submit" class="btn btn-success" id="submit-btn">
+                                <i class="fas fa-save"></i> Confirm Receipt
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Receipt Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h6 class="text-muted">Items Being Received</h6>
+                        <p class="mb-0" id="items-count">0</p>
+                    </div>
+                    <div class="mb-3">
+                        <h6 class="text-muted">Total Quantity</h6>
+                        <p class="mb-0" id="total-qty">0</p>
+                    </div>
+                    <div class="mb-3">
+                        <h6 class="text-muted">Receipt Date</h6>
+                        <p class="mb-0">{{ today|date:"d M Y" }}</p>
+                    </div>
+                    <div class="mb-3">
+                        <h6 class="text-muted">Received By</h6>
+                        <p class="mb-0">{{ user.username }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Instructions</h5>
+                </div>
+                <div class="card-body">
+                    <ol class="mb-0">
+                        <li class="mb-2">Enter the quantity received for each item.</li>
+                        <li class="mb-2">You can use the "Receive All Remaining" button to fill in the maximum quantities.</li>
+                        <li class="mb-2">Add any notes about the receipt if needed.</li>
+                        <li class="mb-2">Click "Confirm Receipt" to update inventory.</li>
+                    </ol>
+                    <div class="alert alert-info mt-3 mb-0">
+                        <i class="fas fa-info-circle"></i> Stock levels will be automatically updated when you confirm receipt.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const receiveForm = document.getElementById('receive-form');
+        const receiveAllBtn = document.getElementById('receive-all');
+        const submitBtn = document.getElementById('submit-btn');
+        const itemsCountEl = document.getElementById('items-count');
+        const totalQtyEl = document.getElementById('total-qty');
+        const receiveInputs = document.querySelectorAll('.receive-qty');
+        
+        // Update summary when quantity changes
+        function updateSummary() {
+            let itemCount = 0;
+            let totalQty = 0;
+            
+            receiveInputs.forEach(input => {
+                const qty = parseInt(input.value) || 0;
+                if (qty > 0) {
+                    itemCount++;
+                    totalQty += qty;
+                }
+            });
+            
+            itemsCountEl.textContent = itemCount;
+            totalQtyEl.textContent = totalQty;
+            
+            // Disable submit button if no items are being received
+            submitBtn.disabled = (totalQty === 0);
+        }
+        
+        // Add event listeners to all quantity inputs
+        receiveInputs.forEach(input => {
+            input.addEventListener('input', function() {
+                const max = parseInt(this.getAttribute('data-max')) || 0;
+                const val = parseInt(this.value) || 0;
+                
+                // Ensure value doesn't exceed maximum
+                if (val > max) {
+                    this.value = max;
+                }
+                
+                updateSummary();
+            });
+        });
+        
+        // Receive all button
+        receiveAllBtn.addEventListener('click', function() {
+            receiveInputs.forEach(input => {
+                const max = parseInt(input.getAttribute('data-max')) || 0;
+                input.value = max;
+            });
+            
+            updateSummary();
+        });
+        
+        // Form submission validation
+        receiveForm.addEventListener('submit', function(e) {
+            const totalQty = parseInt(totalQtyEl.textContent) || 0;
+            
+            if (totalQty === 0) {
+                e.preventDefault();
+                alert('Please enter at least one item to receive.');
+                return false;
+            }
+            
+            return true;
+        });
+        
+        // Initialize summary
+        updateSummary();
+        
+        // Disable submit button initially if no items to receive
+        submitBtn.disabled = true;
+    });
+</script>
+{% endblock extra_js %}

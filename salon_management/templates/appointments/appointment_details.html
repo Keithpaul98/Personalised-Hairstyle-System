@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+
+{% block title %}Appointment Details{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">
+                        <i class="fas fa-calendar-day mr-2"></i>Appointment Details
+                    </h3>
+                </div>
+                <div class="card-body">
+                    {% if cancel_confirmation %}
+                    <div class="alert alert-warning mb-4">
+                        <h4 class="alert-heading"><i class="fas fa-exclamation-triangle mr-2"></i>Cancel Appointment?</h4>
+                        <p>Are you sure you want to cancel this appointment? This action cannot be undone.</p>
+                        <hr>
+                        <form method="post" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-times mr-2"></i>Yes, Cancel Appointment
+                            </button>
+                            {% if user.role == 'customer' %}
+                            <a href="{% url 'appointments:my_appointments' %}" class="btn btn-secondary ml-2">
+                                <i class="fas fa-arrow-left mr-2"></i>No, Go Back
+                            </a>
+                            {% else %}
+                            <a href="{% url 'appointments:admin_appointments' %}" class="btn btn-secondary ml-2">
+                                <i class="fas fa-arrow-left mr-2"></i>No, Go Back
+                            </a>
+                            {% endif %}
+                        </form>
+                    </div>
+                    {% endif %}
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5 class="text-muted mb-3">Service Information</h5>
+                            <p><strong><i class="fas fa-cut mr-2"></i>Service:</strong><br>
+                               {{ appointment.service.name }}</p>
+                            <p><strong><i class="fas fa-user-tie mr-2"></i>Stylist:</strong><br>
+                               {% if appointment.stylist %}
+                                   {% if appointment.stylist.first_name or appointment.stylist.last_name %}
+                                       {{ appointment.stylist.first_name }} {{ appointment.stylist.last_name }}
+                                   {% else %}
+                                       {{ appointment.stylist.username }}
+                                   {% endif %}
+                               {% else %}
+                                   No stylist assigned
+                               {% endif %}
+                            </p>
+                            <p><strong><i class="fas fa-tag mr-2"></i>Price:</strong><br>
+                               ${{ appointment.service.price }}</p>
+                            <p><strong><i class="fas fa-user mr-2"></i>Customer:</strong><br>
+                               {% if appointment.customer %}
+                                   {{ appointment.customer.get_full_name|default:appointment.customer.username }}
+                                   {% if appointment.customer.phone_number %}
+                                       <br><small class="text-muted"><i class="fas fa-phone mr-1"></i>{{ appointment.customer.phone_number }}</small>
+                                   {% endif %}
+                                   {% if appointment.customer.email %}
+                                       <br><small class="text-muted"><i class="fas fa-envelope mr-1"></i>{{ appointment.customer.email }}</small>
+                                   {% endif %}
+                               {% else %}
+                                   No customer information
+                               {% endif %}
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <h5 class="text-muted mb-3">Status Information</h5>
+                            <p><strong><i class="fas fa-info-circle mr-2"></i>Status:</strong><br>
+                               <span class="badge badge-{{ appointment.status|lower }}">
+                                   {{ appointment.status }}
+                               </span>
+                            </p>
+                            <p><strong><i class="far fa-calendar mr-2"></i>Date:</strong><br>
+                               {{ appointment.date|date:"F d, Y" }}
+                            </p>
+                            <p><strong><i class="far fa-clock mr-2"></i>Time:</strong><br>
+                               {{ appointment.time|time:"g:i A" }}
+                            </p>
+                            {% if appointment.status == 'Pending' or appointment.status == 'Confirmed' %}
+                                {% if not cancel_confirmation %}
+                                <form method="post" class="mt-4">
+                                    {% csrf_token %}
+                                    <div class="form-group">
+                                        <label><i class="far fa-calendar mr-2"></i>Date:</label>
+                                        {{ form.date }}
+                                        {% if form.date.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {{ form.date.errors }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="form-group">
+                                        <label><i class="far fa-clock mr-2"></i>Time:</label>
+                                        {{ form.time }}
+                                        {% if form.time.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {{ form.time.errors }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="btn-group">
+                                        <button type="submit" name="update" class="btn btn-primary">
+                                            <i class="fas fa-save mr-2"></i>Update
+                                        </button>
+                                        <button type="submit" name="cancel" class="btn btn-danger ml-2">
+                                            <i class="fas fa-times mr-2"></i>Cancel
+                                        </button>
+                                    </div>
+                                </form>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="text-center mt-4">
+                <a href="{% url back_url %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left mr-2"></i>Back to Appointments
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .badge-pending {
+        background-color: #ffc107;
+    }
+    .badge-confirmed {
+        background-color: #28a745;
+    }
+    .badge-cancelled {
+        background-color: #dc3545;
+    }
+    .form-control {
+        border-radius: 0.25rem;
+    }
+</style>
+{% endblock %}

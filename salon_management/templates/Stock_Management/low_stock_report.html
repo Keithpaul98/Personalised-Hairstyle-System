@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Low Stock Report{% endblock title %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Low Stock Report</h2>
+        <div>
+            <a href="{% url 'Stock_Management:add_purchase_order' %}" class="btn btn-primary">
+                <i class="fas fa-shopping-cart"></i> Create Purchase Order
+            </a>
+            <a href="{% url 'Stock_Management:dashboard' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Out of Stock</h5>
+                    <h2 class="mb-0">{{ out_of_stock_count }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Low Stock</h5>
+                    <h2 class="mb-0">{{ low_stock_count }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h5 class="card-title">In Stock</h5>
+                    <h2 class="mb-0">{{ in_stock_count }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Total Products</h5>
+                    <h2 class="mb-0">{{ total_products }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header bg-light">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h5 class="mb-0">Filter Products</h5>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row">
+                <div class="col-md-3 mb-3">
+                    <label for="category" class="form-label">Category</label>
+                    <select name="category" id="category" class="form-control">
+                        <option value="">All Categories</option>
+                        {% for category in categories %}
+                        <option value="{{ category.id }}" {% if request.GET.category == category.id|stringformat:"i" %}selected{% endif %}>{{ category.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label for="status" class="form-label">Stock Status</label>
+                    <select name="status" id="status" class="form-control">
+                        <option value="">All Statuses</option>
+                        <option value="out" {% if request.GET.status == 'out' %}selected{% endif %}>Out of Stock</option>
+                        <option value="low" {% if request.GET.status == 'low' %}selected{% endif %}>Low Stock</option>
+                        <option value="in" {% if request.GET.status == 'in' %}selected{% endif %}>In Stock</option>
+                    </select>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label for="usage_type" class="form-label">Usage Type</label>
+                    <select name="usage_type" id="usage_type" class="form-control">
+                        <option value="">All Types</option>
+                        <option value="salon" {% if request.GET.usage_type == 'salon' %}selected{% endif %}>Salon Use Only</option>
+                        <option value="retail" {% if request.GET.usage_type == 'retail' %}selected{% endif %}>Retail Only</option>
+                        <option value="both" {% if request.GET.usage_type == 'both' %}selected{% endif %}>Both</option>
+                    </select>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label for="supplier" class="form-label">Supplier</label>
+                    <select name="supplier" id="supplier" class="form-control">
+                        <option value="">All Suppliers</option>
+                        {% for supplier in suppliers %}
+                        <option value="{{ supplier.id }}" {% if request.GET.supplier == supplier.id|stringformat:"i" %}selected{% endif %}>{{ supplier.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12 text-end">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-filter"></i> Filter
+                    </button>
+                    <a href="{% url 'Stock_Management:low_stock_report' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-undo"></i> Reset
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-light">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Products Requiring Attention</h5>
+                <div>
+                    <a href="{% url 'Stock_Management:export_low_stock_report' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-file-export"></i> Export Report
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Category</th>
+                            <th>Current Stock</th>
+                            <th>Minimum Stock</th>
+                            <th>Reorder Quantity</th>
+                            <th>Status</th>
+                            <th>Suppliers</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in products %}
+                        <tr class="{% if product.current_stock <= 0 %}table-danger{% elif product.is_low_stock %}table-warning{% endif %}">
+                            <td>
+                                <a href="{% url 'Stock_Management:product_detail' product_id=product.id %}">
+                                    {{ product.name }}
+                                </a>
+                            </td>
+                            <td>{{ product.category.name }}</td>
+                            <td>{{ product.current_stock }}</td>
+                            <td>{{ product.minimum_stock }}</td>
+                            <td>{{ product.minimum_stock|add:5|sub:product.current_stock }}</td>
+                            <td>
+                                {% if product.current_stock <= 0 %}
+                                <span class="badge bg-danger">Out of Stock</span>
+                                {% elif product.is_low_stock %}
+                                <span class="badge bg-warning">Low Stock</span>
+                                {% else %}
+                                <span class="badge bg-success">In Stock</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if product.suppliers.exists %}
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="supplierDropdown{{ product.id }}" data-toggle="dropdown" aria-expanded="false">
+                                        {{ product.suppliers.count }} Suppliers
+                                    </button>
+                                    <ul class="dropdown-menu" aria-labelledby="supplierDropdown{{ product.id }}">
+                                        {% for supplier in product.suppliers.all %}
+                                        <li><a class="dropdown-item" href="{% url 'Stock_Management:supplier_detail' supplier_id=supplier.id %}">{{ supplier.name }}</a></li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                                {% else %}
+                                <span class="text-muted">No suppliers</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <a href="{% url 'Stock_Management:add_transaction' product_id=product.id %}?type=purchase" class="btn btn-sm btn-outline-success" title="Add Stock">
+                                        <i class="fas fa-plus"></i>
+                                    </a>
+                                    {% if product.suppliers.exists %}
+                                    <a href="{% url 'Stock_Management:add_purchase_order' %}?product={{ product.id }}" class="btn btn-sm btn-outline-primary" title="Create Order">
+                                        <i class="fas fa-shopping-cart"></i>
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center">No products match the selected filters.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

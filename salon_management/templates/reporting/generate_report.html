@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Generate Report{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">Generate New Report</h4>
+        </div>
+        <div class="card-body">
+            <form method="post" action="{% url 'reporting:generate_report' %}">
+                {% csrf_token %}
+                
+                <div class="mb-3">
+                    <label for="title" class="form-label">Report Title</label>
+                    <input type="text" class="form-control" id="title" name="title" placeholder="Enter report title">
+                </div>
+                
+                <div class="mb-3">
+                    <label for="report_type" class="form-label">Report Type</label>
+                    <select class="form-select" id="report_type" name="report_type" required>
+                        {% for value, display in report_types %}
+                            <option value="{{ value }}">{{ display }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="start_date" class="form-label">Start Date</label>
+                        <input type="date" class="form-control" id="start_date" name="start_date">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="end_date" class="form-label">End Date</label>
+                        <input type="date" class="form-control" id="end_date" name="end_date">
+                    </div>
+                </div>
+                
+                <div class="text-end">
+                    <a href="{% url 'reporting:dashboard' %}" class="btn btn-secondary me-2">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Generate Report</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div class="card mt-4">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0">Report Types Explained</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Business Report</h6>
+                    <p>A comprehensive overview of all business metrics including revenue, appointments, products, services, and customer data.</p>
+                    
+                    <h6>Sales Report</h6>
+                    <p>Detailed analysis of sales performance, including product and service revenue, transaction values, and trends.</p>
+                    
+                    <h6>Appointments Report</h6>
+                    <p>Analysis of appointment bookings, completion rates, cancellations, and service popularity.</p>
+                    
+                    <h6>Stylists Report</h6>
+                    <p>Performance metrics for each stylist, including appointments, revenue generated, and customer ratings.</p>
+                </div>
+                <div class="col-md-6">
+                    <h6>Customers Report</h6>
+                    <p>Customer analytics including new vs. returning customers, average spend, and loyalty program metrics.</p>
+                    
+                    <h6>Inventory Report</h6>
+                    <p>Analysis of product inventory, sales, revenue, and current stock levels.</p>
+                    
+                    <h6>Services Report</h6>
+                    <p>Detailed breakdown of service popularity, booking frequency, and revenue generation.</p>
+                    
+                    <h6>Hairstyles Report</h6>
+                    <p>Analysis of hairstyle popularity based on virtual try-on requests and appointment bookings.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set default dates (last 30 days)
+        const today = new Date();
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(today.getDate() - 30);
+        
+        // Format dates as YYYY-MM-DD
+        const formatDate = (date) => {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+        
+        // Set default values for date inputs
+        document.getElementById('start_date').value = formatDate(thirtyDaysAgo);
+        document.getElementById('end_date').value = formatDate(today);
+        
+        // Update report title based on selected report type
+        const reportTypeSelect = document.getElementById('report_type');
+        const titleInput = document.getElementById('title');
+        
+        reportTypeSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            titleInput.value = selectedOption.text + ' Report';
+        });
+        
+        // Trigger change event to set initial title
+        reportTypeSelect.dispatchEvent(new Event('change'));
+    });
+</script>
+{% endblock %}

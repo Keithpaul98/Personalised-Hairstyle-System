@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Face Shape Guide{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h2 class="mb-0">Face Shape Guide</h2>
+                </div>
+                <div class="card-body">
+                    <p class="lead">Understanding your face shape can help you choose the most flattering hairstyles. Our virtual try-on system uses advanced MediaPipe technology to analyze your facial features and determine your face shape.</p>
+                    
+                    <div class="row mt-4">
+                        {% for face_shape in face_shapes %}
+                        <div class="col-md-6 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header bg-light">
+                                    <h3 class="mb-0">{{ face_shape.get_shape_type_display }} Face Shape</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-4 text-center">
+                                            <img src="{% static 'images/face_shapes/'|add:face_shape.shape_type|add:'.png' %}" alt="{{ face_shape.get_shape_type_display }} face shape" class="img-fluid mb-3" style="max-height: 150px;" onerror="this.src='{% static 'images/face_shape_placeholder.png' %}'">
+                                        </div>
+                                        <div class="col-md-8">
+                                            <h5>Characteristics:</h5>
+                                            {% if face_shape.shape_type == 'oval' %}
+                                            <ul>
+                                                <li>Balanced proportions</li>
+                                                <li>Forehead slightly wider than the chin</li>
+                                                <li>Gently rounded jawline</li>
+                                            </ul>
+                                            {% elif face_shape.shape_type == 'round' %}
+                                            <ul>
+                                                <li>Similar width and length</li>
+                                                <li>Full cheeks</li>
+                                                <li>Rounded jawline and chin</li>
+                                            </ul>
+                                            {% elif face_shape.shape_type == 'square' %}
+                                            <ul>
+                                                <li>Strong, angular jawline</li>
+                                                <li>Forehead, cheekbones, and jawline similar in width</li>
+                                                <li>Minimal curves</li>
+                                            </ul>
+                                            {% elif face_shape.shape_type == 'heart' %}
+                                            <ul>
+                                                <li>Wider forehead and cheekbones</li>
+                                                <li>Narrow jawline and chin</li>
+                                                <li>Often with a widow's peak</li>
+                                            </ul>
+                                            {% elif face_shape.shape_type == 'diamond' %}
+                                            <ul>
+                                                <li>Narrow forehead and jawline</li>
+                                                <li>Wide cheekbones</li>
+                                                <li>Angular features</li>
+                                            </ul>
+                                            {% elif face_shape.shape_type == 'oblong' %}
+                                            <ul>
+                                                <li>Face length greater than width</li>
+                                                <li>Forehead, cheeks, and jawline similar in width</li>
+                                                <li>Long, straight cheeks</li>
+                                            </ul>
+                                            {% else %}
+                                            <ul>
+                                                <li>{{ face_shape.description }}</li>
+                                            </ul>
+                                            {% endif %}
+                                            
+                                            <h5 class="mt-3">Best Hairstyles:</h5>
+                                            {% if face_shape.shape_type == 'oval' %}
+                                            <ul>
+                                                <li>Most hairstyles work well</li>
+                                                <li>Layers to maintain balance</li>
+                                                <li>Side or middle parts</li>
+                                            </ul>
+                                            {% elif face_shape.shape_type == 'round' %}
+                                            <ul>
+                                                <li>Styles with height on top</li>
+                                                <li>Side parts and asymmetrical cuts</li>
+                                                <li>Angles to offset roundness</li>
+                                            </ul>
+                                            {% elif face_shape.shape_type == 'square' %}
+                                            <ul>
+                                                <li>Soft layers around the face</li>
+                                                <li>Side-swept bangs</li>
+                                                <li>Styles that soften the jawline</li>
+                                            </ul>
+                                            {% elif face_shape.shape_type == 'heart' %}
+                                            <ul>
+                                                <li>Chin-length or longer styles</li>
+                                                <li>Side-swept bangs</li>
+                                                <li>Styles that add width at the jawline</li>
+                                            </ul>
+                                            {% elif face_shape.shape_type == 'diamond' %}
+                                            <ul>
+                                                <li>Styles with volume at the forehead</li>
+                                                <li>Chin-length or longer cuts</li>
+                                                <li>Side-swept or curtain bangs</li>
+                                            </ul>
+                                            {% elif face_shape.shape_type == 'oblong' %}
+                                            <ul>
+                                                <li>Styles with fullness at the sides</li>
+                                                <li>Bangs to shorten the face</li>
+                                                <li>Waves or curls for width</li>
+                                            </ul>
+                                            {% else %}
+                                            <ul>
+                                                <li>Consult with our stylists for personalized recommendations</li>
+                                            </ul>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    
+                                    {% if face_shape_examples|get_item:face_shape.id %}
+                                    <div class="mt-4">
+                                        <h5>Example Hairstyles:</h5>
+                                        <div class="row">
+                                            {% for hairstyle in face_shape_examples|get_item:face_shape.id %}
+                                            <div class="col-6 col-md-3 mb-2">
+                                                <div class="card">
+                                                    <img src="{{ hairstyle.image.url }}" class="card-img-top" alt="{{ hairstyle.name }}" style="height: 100px; object-fit: cover;">
+                                                    <div class="card-body p-2">
+                                                        <p class="card-text small text-center mb-0">{{ hairstyle.name }}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="col-12">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i> No face shape information available yet.
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="card-footer bg-light">
+                    <a href="{% url 'virtual_tryon:upload_photo' %}" class="btn btn-primary">
+                        <i class="fas fa-camera"></i> Try the Virtual Try-On
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

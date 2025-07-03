@@ -1,0 +1,540 @@
+{% extends "base.html" %}
+{% load static %}
+{% load stock_filters %}
+
+{% block title %}
+    {% if order %}Edit Purchase Order{% else %}Create Purchase Order{% endif %}
+{% endblock title %}
+
+{% block extra_css %}
+<style>
+    .formset-item {
+        border: 1px solid #e9ecef;
+        border-radius: 0.25rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        position: relative;
+    }
+    .delete-row {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+    }
+    .empty-form {
+        display: none;
+    }
+</style>
+{% endblock extra_css %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>{% if order %}Edit Purchase Order{% else %}Create Purchase Order{% endif %}</h2>
+        <a href="{% url 'Stock_Management:purchase_order_list' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Purchase Orders
+        </a>
+    </div>
+
+    <form method="post" id="purchase-order-form" novalidate>
+        {% csrf_token %}
+        
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+            {{ form.non_field_errors }}
+        </div>
+        {% endif %}
+        
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card mb-4">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">Order Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <!-- Supplier -->
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.supplier.id_for_label }}" class="form-label">Supplier</label>
+                                {{ form.supplier.errors }}
+                                <select name="{{ form.supplier.name }}" id="{{ form.supplier.id_for_label }}" 
+                                       class="form-control {% if form.supplier.errors %}is-invalid{% endif %}" required>
+                                    <option value="">Select Supplier</option>
+                                    {% for choice in form.supplier.field.choices %}
+                                    {% if choice.0 %}
+                                    <option value="{{ choice.0 }}" {% if form.supplier.value|stringformat:'s' == choice.0|stringformat:'s' %}selected{% endif %}>
+                                        {{ choice.1 }}
+                                    </option>
+                                    {% endif %}
+                                    {% endfor %}
+                                </select>
+                                {% if form.supplier.help_text %}
+                                <small class="form-text text-muted">{{ form.supplier.help_text }}</small>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Expected Delivery Date -->
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.expected_delivery_date.id_for_label }}" class="form-label">Expected Delivery Date</label>
+                                {{ form.expected_delivery_date.errors }}
+                                <input type="date" name="{{ form.expected_delivery_date.name }}" id="{{ form.expected_delivery_date.id_for_label }}" 
+                                       class="form-control {% if form.expected_delivery_date.errors %}is-invalid{% endif %}" 
+                                       value="{{ form.expected_delivery_date.value|date:'Y-m-d'|default:'' }}">
+                                {% if form.expected_delivery_date.help_text %}
+                                <small class="form-text text-muted">{{ form.expected_delivery_date.help_text }}</small>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Status -->
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.status.id_for_label }}" class="form-label">Status</label>
+                                {{ form.status.errors }}
+                                <select name="{{ form.status.name }}" id="{{ form.status.id_for_label }}" 
+                                       class="form-control {% if form.status.errors %}is-invalid{% endif %}">
+                                    {% for choice in form.status.field.choices %}
+                                    <option value="{{ choice.0 }}" {% if form.status.value == choice.0 %}selected{% endif %}>
+                                        {{ choice.1 }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                {% if form.status.help_text %}
+                                <small class="form-text text-muted">{{ form.status.help_text }}</small>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Notes -->
+                            <div class="col-12 mb-3">
+                                <label for="{{ form.notes.id_for_label }}" class="form-label">Notes</label>
+                                {{ form.notes.errors }}
+                                <textarea name="{{ form.notes.name }}" id="{{ form.notes.id_for_label }}" 
+                                          class="form-control {% if form.notes.errors %}is-invalid{% endif %}" 
+                                          rows="3">{{ form.notes.value|default:'' }}</textarea>
+                                {% if form.notes.help_text %}
+                                <small class="form-text text-muted">{{ form.notes.help_text }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header bg-light">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Order Items</h5>
+                            <button type="button" class="btn btn-sm btn-primary" id="add-item">
+                                <i class="fas fa-plus"></i> Add Item
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        {{ formset.management_form }}
+                        {{ formset.non_form_errors }}
+                        
+                        <div id="items-container">
+                            {% for item_form in formset %}
+                            <div class="formset-item">
+                                {% if item_form.instance.pk %}{{ item_form.DELETE }}{% endif %}
+                                <button type="button" class="btn btn-sm btn-outline-danger delete-row">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                                
+                                <div class="row">
+                                    <!-- Product -->
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ item_form.product.id_for_label }}" class="form-label">Product</label>
+                                        {{ item_form.product.errors }}
+                                        <select name="{{ item_form.product.html_name }}" id="{{ item_form.product.id_for_label }}" 
+                                               class="form-control product-select {% if item_form.product.errors %}is-invalid{% endif %}" required>
+                                            <option value="">Select Product</option>
+                                            {% for choice in item_form.product.field.choices %}
+                                            {% if choice.0 %}
+                                            <option value="{{ choice.0 }}" 
+                                                    data-price="{{ choice.0|get_product_price }}"
+                                                    data-current-stock="{{ choice.0|get_product_current_stock }}"
+                                                    data-min-stock="{{ choice.0|get_product_min_stock }}"
+                                                    {% if item_form.product.value|stringformat:'s' == choice.0|stringformat:'s' %}selected{% endif %}>
+                                                {{ choice.1 }}
+                                            </option>
+                                            {% endif %}
+                                            {% endfor %}
+                                        </select>
+                                        <div class="product-stock-info mt-1 small text-muted" style="display: none;">
+                                            Current Stock: <span class="current-stock">0</span> | 
+                                            Min Stock: <span class="min-stock">0</span> | 
+                                            Recommended Order: <span class="recommended-order">0</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Quantity -->
+                                    <div class="col-md-3 mb-3">
+                                        <label for="{{ item_form.quantity_ordered.id_for_label }}" class="form-label">Quantity</label>
+                                        {{ item_form.quantity_ordered.errors }}
+                                        <input type="number" name="{{ item_form.quantity_ordered.html_name }}" id="{{ item_form.quantity_ordered.id_for_label }}" 
+                                               class="form-control quantity-input {% if item_form.quantity_ordered.errors %}is-invalid{% endif %}" 
+                                               value="{{ item_form.quantity_ordered.value|default:'1' }}" min="1" required>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary mt-1 use-recommended-btn" style="display: none;">
+                                            Use Recommended
+                                        </button>
+                                    </div>
+                                    
+                                    <!-- Unit Price (Hidden and Auto-populated) -->
+                                    <div class="col-md-3 mb-3">
+                                        <label for="{{ item_form.unit_price.id_for_label }}" class="form-label">Unit Price (Auto-filled)</label>
+                                        {{ item_form.unit_price.errors }}
+                                        <div class="input-group">
+                                            <span class="input-group-text">MWK</span>
+                                            <input type="number" name="{{ item_form.unit_price.html_name }}" id="{{ item_form.unit_price.id_for_label }}" 
+                                                   class="form-control unit-price-input {% if item_form.unit_price.errors %}is-invalid{% endif %}" 
+                                                   value="{{ item_form.unit_price.value|default:'0.00' }}" step="0.01" min="0" readonly>
+                                            <button type="button" class="btn btn-outline-secondary edit-price-btn">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                        </div>
+                                        <small class="form-text text-muted">Auto-filled from product cost price</small>
+                                    </div>
+                                </div>
+                                
+                                <!-- Hidden total_price field -->
+                                <input type="hidden" name="{{ item_form.total_price.html_name }}" id="{{ item_form.total_price.id_for_label }}" 
+                                       class="total-price-input" value="{{ item_form.total_price.value|default:'0.00' }}">
+                                
+                                <div class="row">
+                                    <div class="col-12">
+                                        <div class="item-total-container text-end">
+                                            <span class="item-total-label">Item Total:</span>
+                                            <span class="item-total-value">MWK 0.00</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                {% for hidden_field in item_form.hidden_fields %}
+                                {{ hidden_field }}
+                                {% endfor %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <div id="empty-form" class="empty-form">
+                            <div class="formset-item">
+                                <button type="button" class="btn btn-sm btn-outline-danger delete-row">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                                
+                                <div class="row">
+                                    <!-- Product -->
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ formset.empty_form.product.id_for_label }}" class="form-label">Product</label>
+                                        <select name="{{ formset.empty_form.product.html_name }}" id="{{ formset.empty_form.product.id_for_label }}" 
+                                               class="form-control product-select" required>
+                                            <option value="">Select Product</option>
+                                            {% for choice in formset.empty_form.product.field.choices %}
+                                            {% if choice.0 %}
+                                            <option value="{{ choice.0 }}" data-price="{{ choice.0|get_product_price }}"
+                                                    data-current-stock="{{ choice.0|get_product_current_stock }}"
+                                                    data-min-stock="{{ choice.0|get_product_min_stock }}">
+                                                {{ choice.1 }}
+                                            </option>
+                                            {% endif %}
+                                            {% endfor %}
+                                        </select>
+                                        <div class="product-stock-info mt-1 small text-muted" style="display: none;">
+                                            Current Stock: <span class="current-stock">0</span> | 
+                                            Min Stock: <span class="min-stock">0</span> | 
+                                            Recommended Order: <span class="recommended-order">0</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Quantity -->
+                                    <div class="col-md-3 mb-3">
+                                        <label for="{{ formset.empty_form.quantity_ordered.id_for_label }}" class="form-label">Quantity</label>
+                                        <input type="number" name="{{ formset.empty_form.quantity_ordered.html_name }}" id="{{ formset.empty_form.quantity_ordered.id_for_label }}" 
+                                               class="form-control quantity-input" value="1" min="1" required>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary mt-1 use-recommended-btn" style="display: none;">
+                                            Use Recommended
+                                        </button>
+                                    </div>
+                                    
+                                    <!-- Unit Price (Hidden and Auto-populated) -->
+                                    <div class="col-md-3 mb-3">
+                                        <label for="{{ formset.empty_form.unit_price.id_for_label }}" class="form-label">Unit Price (Auto-filled)</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">MWK</span>
+                                            <input type="number" name="{{ formset.empty_form.unit_price.html_name }}" id="{{ formset.empty_form.unit_price.id_for_label }}" 
+                                                   class="form-control unit-price-input" value="0.00" step="0.01" min="0" readonly>
+                                            <button type="button" class="btn btn-outline-secondary edit-price-btn">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                        </div>
+                                        <small class="form-text text-muted">Auto-filled from product cost price</small>
+                                    </div>
+                                </div>
+                                
+                                <!-- Hidden total_price field for empty form -->
+                                <input type="hidden" name="{{ formset.empty_form.total_price.html_name }}" id="{{ formset.empty_form.total_price.id_for_label }}" 
+                                       class="total-price-input" value="0.00">
+                                
+                                <div class="row">
+                                    <div class="col-12">
+                                        <div class="item-total-container text-end">
+                                            <span class="item-total-label">Item Total:</span>
+                                            <span class="item-total-value">MWK 0.00</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                {% for hidden_field in formset.empty_form.hidden_fields %}
+                                {{ hidden_field }}
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        {% if formset.forms|length == 0 %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> No items added yet. Click "Add Item" to add products to this order.
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card mb-4">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">Order Summary</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between mb-3">
+                            <span>Total Items:</span>
+                            <span id="total-items">{{ formset.forms|length }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-3">
+                            <span>Total Amount:</span>
+                            <span id="total-amount">${{ form.total_amount.value|default:'0.00' }}</span>
+                        </div>
+                        <input type="hidden" name="{{ form.total_amount.name }}" id="{{ form.total_amount.id_for_label }}" 
+                               value="{{ form.total_amount.value|default:'0.00' }}">
+                        
+                        <div class="d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> {% if order %}Update{% else %}Create{% endif %} Order
+                            </button>
+                            <a href="{% url 'Stock_Management:purchase_order_list' %}" class="btn btn-outline-secondary">
+                                Cancel
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock content %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get data from Django context as strings
+        const formDataStr = '{{ form_data_json|escapejs }}';
+        const formData = JSON.parse(formDataStr);
+        
+        const itemsContainer = document.getElementById('items-container');
+        const emptyForm = document.getElementById('empty-form').innerHTML;
+        const addItemBtn = document.getElementById('add-item');
+        const totalItemsSpan = document.getElementById('total-items');
+        const totalAmountSpan = document.getElementById('total-amount');
+        const totalAmountInput = document.getElementById(formData.total_amount_id);
+        
+        // Get the current form count
+        let formCount = formData.formset_total_forms;
+        
+        // Add new item
+        addItemBtn.addEventListener('click', function() {
+            const newForm = emptyForm.replace(/__prefix__/g, formCount);
+            itemsContainer.insertAdjacentHTML('beforeend', newForm);
+            
+            // Update the management form
+            document.getElementById('id_' + formData.formset_prefix + '-TOTAL_FORMS').value = ++formCount;
+            
+            // Update totals
+            updateTotals();
+            
+            // Attach event listeners to the new form
+            attachEventListeners();
+        });
+        
+        // Delete item
+        function attachDeleteEvents() {
+            document.querySelectorAll('.delete-row').forEach(button => {
+                button.addEventListener('click', function() {
+                    const item = this.closest('.formset-item');
+                    
+                    // If this is an existing item, mark it for deletion
+                    const deleteCheckbox = item.querySelector('input[type="checkbox"][name$="-DELETE"]');
+                    if (deleteCheckbox) {
+                        deleteCheckbox.checked = true;
+                        item.style.display = 'none';
+                    } else {
+                        // Otherwise, remove it from the DOM
+                        item.remove();
+                    }
+                    
+                    // Update totals
+                    updateTotals();
+                });
+            });
+        }
+        
+        // Calculate item total
+        function calculateItemTotal(item) {
+            const quantityInput = item.querySelector('.quantity-input');
+            const unitPriceInput = item.querySelector('.unit-price-input');
+            const totalPriceInput = item.querySelector('.total-price-input');
+            const totalValueSpan = item.querySelector('.item-total-value');
+            
+            const quantity = parseFloat(quantityInput.value) || 0;
+            const unitPrice = parseFloat(unitPriceInput.value) || 0;
+            const total = quantity * unitPrice;
+            
+            // Update hidden total price input
+            totalPriceInput.value = total.toFixed(2);
+            
+            // Update displayed total
+            totalValueSpan.textContent = `MWK ${total.toFixed(2)}`;
+        }
+        
+        // Update product price when selected
+        function attachProductSelectEvents() {
+            $('.product-select').on('change', function() {
+                const item = $(this).closest('.formset-item');
+                const productId = $(this).val();
+                const unitPriceInput = item.find('.unit-price-input');
+                const stockInfoDiv = item.find('.product-stock-info');
+                const currentStockSpan = item.find('.current-stock');
+                const minStockSpan = item.find('.min-stock');
+                const recommendedOrderSpan = item.find('.recommended-order');
+                const useRecommendedBtn = item.find('.use-recommended-btn');
+                
+                if (productId) {
+                    const selectedOption = $(this).find('option:selected');
+                    const price = selectedOption.data('price');
+                    const currentStock = selectedOption.data('current-stock');
+                    const minStock = selectedOption.data('min-stock');
+                    let recommendedOrder = 0;
+                    
+                    // Set the unit price
+                    unitPriceInput.val(price);
+                    
+                    // Update stock information
+                    currentStockSpan.text(currentStock);
+                    minStockSpan.text(minStock);
+                    
+                    // Calculate recommended order quantity
+                    if (currentStock < minStock) {
+                        recommendedOrder = minStock - currentStock + 5; // Buffer of 5 units
+                    } else {
+                        recommendedOrder = 5; // Minimum order of 5 units
+                    }
+                    
+                    recommendedOrderSpan.text(recommendedOrder);
+                    
+                    // Show stock info and recommended button
+                    stockInfoDiv.show();
+                    useRecommendedBtn.show();
+                    
+                    // Reset the unit price input to read-only
+                    unitPriceInput.prop('readonly', true);
+                } else {
+                    // Hide stock info and recommended button if no product selected
+                    stockInfoDiv.hide();
+                    useRecommendedBtn.hide();
+                }
+                
+                calculateItemTotal(item);
+            });
+        }
+        
+        // Update item total when quantity or price changes
+        function attachCalculationEvents() {
+            document.querySelectorAll('input[name$="-quantity"], input[name$="-unit_price"]').forEach(input => {
+                input.addEventListener('input', function() {
+                    const item = this.closest('.formset-item');
+                    calculateItemTotal(item);
+                    updateOrderTotal();
+                });
+            });
+        }
+        
+        // Update order total
+        function updateOrderTotal() {
+            let total = 0;
+            
+            document.querySelectorAll('input[name$="-total"]').forEach(input => {
+                if (input.closest('.formset-item').style.display !== 'none') {
+                    total += parseFloat(input.value) || 0;
+                }
+            });
+            
+            totalAmountSpan.textContent = total.toFixed(2);
+            totalAmountInput.value = total.toFixed(2);
+        }
+        
+        // Update totals (items count and order total)
+        function updateTotals() {
+            // Count visible items
+            const visibleItems = Array.from(document.querySelectorAll('.formset-item')).filter(item => {
+                return item.style.display !== 'none';
+            }).length;
+            
+            totalItemsSpan.textContent = visibleItems;
+            updateOrderTotal();
+        }
+        
+        // Attach all event listeners
+        function attachEventListeners() {
+            attachDeleteEvents();
+            attachProductSelectEvents();
+            attachCalculationEvents();
+            attachRecommendedButtonEvents();
+            attachEditPriceButtonEvents();
+        }
+        
+        // Attach event listener for recommended button
+        function attachRecommendedButtonEvents() {
+            $('.use-recommended-btn').on('click', function() {
+                const item = $(this).closest('.formset-item');
+                const recommendedOrder = item.find('.recommended-order').text();
+                item.find('.quantity-input').val(recommendedOrder);
+                calculateItemTotal(item);
+                updateOrderTotal();
+            });
+        }
+        
+        // Attach event listener for edit price button
+        function attachEditPriceButtonEvents() {
+            $('.edit-price-btn').on('click', function() {
+                const unitPriceInput = $(this).closest('.input-group').find('.unit-price-input');
+                if (unitPriceInput.prop('readonly')) {
+                    unitPriceInput.prop('readonly', false).focus();
+                    $(this).html('<i class="fas fa-check"></i>');
+                } else {
+                    unitPriceInput.prop('readonly', true);
+                    $(this).html('<i class="fas fa-edit"></i>');
+                    
+                    // Recalculate total when price is confirmed
+                    const item = $(this).closest('.formset-item');
+                    calculateItemTotal(item);
+                    updateOrderTotal();
+                }
+            });
+        }
+        
+        // Initialize
+        attachEventListeners();
+        
+        // Calculate initial totals for existing items
+        document.querySelectorAll('.formset-item').forEach(item => {
+            calculateItemTotal(item);
+        });
+        updateOrderTotal();
+    });
+</script>
+{% endblock extra_js %}

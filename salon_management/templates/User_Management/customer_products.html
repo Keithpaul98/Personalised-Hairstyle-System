@@ -1,80 +1,90 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Customer Products</title>
-    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <a class="navbar-brand" href="{% url 'home' %}">MyStore</a>
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav ml-auto">
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'home' %}">Home</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'customer_products' %}">Products</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'view_cart' %}">Cart</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'profile' %}">My Profile</a>
-                </li>
-                <li class="nav-item">
-                    <a class = "nav-link" href="{% url 'custom_logout' %}">Logout</a>
-                </li>
-            </ul>
-        </div>
-    </nav>
-    <div class="container mt-5">
-        {% if messages %}
-            <div class="alert alert-info" role="alert">
-                {% for message in messages %}
-                    <p>{{ message }}</p>
-                {% endfor %}
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Shop Products{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2><i class="fas fa-store mr-2"></i>Shop Products</h2>
+                <a href="{% url 'User_Management:view_cart' %}" class="btn btn-primary">
+                    <i class="fas fa-shopping-cart mr-2"></i>View Cart
+                    {% if cart_count %}
+                        <span class="badge badge-light ml-2">{{ cart_count }}</span>
+                    {% endif %}
+                </a>
             </div>
-        {% endif %}
-        <h2>Products</h2>
-        <table class="table table-bordered">
-            <thead class="thead-dark">
-                <tr>
-                    <th>Name</th>
-                    <th>Description</th>
-                    <th>Price</th>
-                    <th>Stock</th>
-                    <th>Quantity</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for product in products %}
-                <tr>
-                    <td>{{ product.name }}</td>
-                    <td>{{ product.description }}</td>
-                    <td>{{ product.price }}</td>
-                    <td>{{ product.stock }}</td>
-                    <td>
-                        <form method="POST" action="{% url 'add_to_cart' product.id %}">
-                            {% csrf_token %}
-                            <input type="number" name="quantity" min="1" max="{{ product.stock }}" value="1" class="form-control" required>
-                    </td>
-                    <td>
-                            <button type="submit" class="btn btn-primary">Add to Cart</button>
-                        </form>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        </div>
     </div>
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-</body>
-</html>
+
+    <!-- Products Grid -->
+    <div class="row">
+        {% for product in products %}
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 shadow-sm product-card">
+                    {% if product.image %}
+                        <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}"
+                             style="height: 200px; object-fit: cover;">
+                    {% else %}
+                        <img src="{% static 'images/default-product.jpg' %}" class="card-img-top" 
+                             alt="Default product image" style="height: 200px; object-fit: cover;">
+                    {% endif %}
+                    
+                    <div class="card-body">
+                        <h5 class="card-title">{{ product.name }}</h5>
+                        <p class="card-text text-muted">{{ product.description }}</p>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span class="h5 mb-0">MWK {{ product.price }}</span>
+                            <span class="badge badge-{% if product.current_stock > 10 %}success{% elif product.current_stock > 0 %}warning{% else %}danger{% endif %}">
+                                {% if product.current_stock > 0 %}
+                                    {{ product.current_stock }} in stock
+                                {% else %}
+                                    Out of stock
+                                {% endif %}
+                            </span>
+                        </div>
+                        
+                        {% if product.current_stock > 0 %}
+                            <form method="POST" action="{% url 'User_Management:add_to_cart' product.id %}">
+                                {% csrf_token %}
+                                <div class="input-group">
+                                    <input type="number" name="quantity" class="form-control" 
+                                           value="1" min="1" max="{{ product.current_stock }}">
+                                    <div class="input-group-append">
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-cart-plus mr-2"></i>Add to Cart
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        {% else %}
+                            <button class="btn btn-secondary btn-block" disabled>
+                                <i class="fas fa-times-circle mr-2"></i>Out of Stock
+                            </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <div class="col-12 text-center py-5">
+                <i class="fas fa-box-open fa-4x text-muted mb-4"></i>
+                <h4 class="text-muted">No products available</h4>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .product-card {
+        transition: transform 0.2s;
+    }
+    .product-card:hover {
+        transform: translateY(-5px);
+    }
+</style>
+{% endblock %}

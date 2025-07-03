@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Rate Your Appointment{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Rate Your Experience</h4>
+                </div>
+                <div class="card-body">
+                    <!-- Appointment Details -->
+                    <div class="mb-4">
+                        <h5 class="border-bottom pb-2">Appointment Details</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Service:</strong> {{ appointment.service.name }}</p>
+                                <p><strong>Stylist:</strong> {{ appointment.stylist.get_full_name }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Date:</strong> {{ appointment.date }}</p>
+                                <p><strong>Time:</strong> {{ appointment.time }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Rating Form -->
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <!-- Rating Stars -->
+                        <div class="form-group">
+                            <label class="h6">Your Rating:</label>
+                            <div class="rating-container">
+                                {{ form.rating }}
+                            </div>
+                            {% if form.rating.errors %}
+                                <div class="text-danger">{{ form.rating.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Comment -->
+                        <div class="form-group mt-3">
+                            <label class="h6">Your Comment:</label>
+                            {{ form.comment }}
+                            {% if form.comment.errors %}
+                                <div class="text-danger">{{ form.comment.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-star mr-2"></i>Submit Rating
+                            </button>
+                            <a href="{% url 'appointments:appointment_history' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left mr-2"></i>Back
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.rating-container {
+    display: flex;
+    gap: 1rem;
+    margin: 1rem 0;
+}
+
+.rating-input {
+    display: flex;
+    gap: 1.5rem;
+}
+
+.rating-input input[type="radio"] {
+    display: none;
+}
+
+.rating-input label {
+    cursor: pointer;
+    font-size: 1.5rem;
+    color: #ddd;
+    transition: color 0.2s;
+}
+
+.rating-input input[type="radio"]:checked + label {
+    color: #ffd700;
+}
+
+.rating-input label:hover {
+    color: #ffd700;
+}
+
+.rating-input label:hover ~ label {
+    color: #ffd700;
+}
+</style>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ratingInputs = document.querySelectorAll('.rating-input input[type="radio"]');
+    const labels = document.querySelectorAll('.rating-input label');
+
+    ratingInputs.forEach((input, index) => {
+        input.addEventListener('change', function() {
+            labels.forEach((label, labelIndex) => {
+                if (labelIndex <= index) {
+                    label.style.color = '#ffd700';
+                } else {
+                    label.style.color = '#ddd';
+                }
+            });
+        });
+    });
+});
+</script>
+{% endblock %}
+{% endblock %}

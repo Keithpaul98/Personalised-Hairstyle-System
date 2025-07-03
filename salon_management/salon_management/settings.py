@@ -39,7 +39,15 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'User_Management',
     'payments',
+    'appointments',
+    'services',
+    'reporting',
+    'Stock_Management',
+    'notifications',
+    'conversations',
+    'virtual_tryon',
 ]
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -49,6 +57,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'User_Management.middleware.RoleBasedAccessMiddleware',
 ]
 
 ROOT_URLCONF = 'salon_management.urls'
@@ -64,6 +73,9 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'notifications.context_processors.notification_processor',
+                'conversations.context_processors.unread_messages_count',
+                'appointments.context_processors.appointment_context',
             ],
         },
     },
@@ -78,7 +90,7 @@ WSGI_APPLICATION = 'salon_management.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'Stock',
+        'NAME': 'Impact_Looks',
         'USER': 'postgres',
         'PASSWORD': '1234',
         'HOST': 'localhost',
@@ -126,6 +138,10 @@ STATICFILES_DIRS = [
     BASE_DIR / 'static'
 ]
 
+# Media files (User uploaded content)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR  # Point to the salon_management directory which contains service_images
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
@@ -138,3 +154,49 @@ AUTH_USER_MODEL = 'User_Management.CustomUser'
 # Stripe API Key
 STRIPE_PUBLIC_KEY = 'pk_test_51Pp3QVIwKycCH0VKsOhdAYIcAAn7eDFqkd80Wo2vrtKgFoAotAZfHgikUZrWCQU4pGdt8HWDt6WO8nFiljebAasT00ltNWvIH6'
 STRIPE_SECRET_KEY = 'sk_test_51Pp3QVIwKycCH0VKhIX4GxtbKnx1w3oOsfXcrmGsgoeTNIvXqujpcVjPzYIuQOoGEplnhYNObaHGHWTPaHMYyVLg00hAfVAWO1'
+
+#stripe webhook secret
+STRIPE_WEBHOOK_SECRET = 'whsec_b358ded7ecfa583bbfc7c73cb58a3c364b8dbcb838a51d739bb47d66a0596b6a'
+
+# Add these settings
+LOGIN_URL = '/login/'
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/'
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': 'debug.log',
+            'formatter': 'verbose',
+        },
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'virtual_tryon': {
+            'handlers': ['file', 'console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+    },
+}
+
+
+
+# Perfect Corp API settings
+PERFECT_CORP_API_KEY = "GJUDRoWWTSMIFXDPQ3DauTRncehPkOSf"
+PERFECT_CORP_API_SECRET = "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCsD93uHNU14P4aXhF4LW4n8WGtUlx5jIw8uEx8oZy/8c66jDyhhIq9DMsbjJcVpHG1Tf0zexmE+FfkcqK05WgDcj2QK+nU9HSJjPE/oyFjFV5NlMG27x0AyNumzv2WD6+7qdt49srXKpttxLEe2q7qjoMmkxJNRFLXZKdCCw4BaQIDAQAB"
+PERFECT_CORP_ACCESS_TOKEN = "mock_token_4045bff12f"  # This will be obtained programmatically

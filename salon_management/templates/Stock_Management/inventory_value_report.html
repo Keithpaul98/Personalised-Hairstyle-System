@@ -1,0 +1,314 @@
+
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Inventory Value Report{% endblock title %}
+
+{% block extra_css %}
+<style>
+    .chart-container {
+        height: 300px;
+    }
+</style>
+{% endblock extra_css %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Inventory Value Report</h2>
+        <div>
+            {% comment %}
+            <a href="{% url 'Stock_Management:export_inventory_value_report' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" class="btn btn-outline-primary">
+                <i class="fas fa-file-export"></i> Export Report
+            </a>
+            {% endcomment %}
+            <a href="{% url 'Stock_Management:dashboard' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Total Inventory Value</h5>
+                    <h2 class="mb-0">${{ total_inventory_value|floatformat:2 }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Potential Retail Value</h5>
+                    <h2 class="mb-0">${{ potential_retail_value|floatformat:2 }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Potential Profit</h5>
+                    <h2 class="mb-0">${{ potential_profit|floatformat:2 }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header bg-light">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h5 class="mb-0">Filter Report</h5>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row">
+                <div class="col-md-4 mb-3">
+                    <label for="category" class="form-label">Category</label>
+                    <select name="category" id="category" class="form-control">
+                        <option value="">All Categories</option>
+                        {% for category in categories %}
+                        <option value="{{ category.id }}" {% if request.GET.category == category.id|stringformat:"i" %}selected{% endif %}>{{ category.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label for="usage_type" class="form-label">Usage Type</label>
+                    <select name="usage_type" id="usage_type" class="form-control">
+                        <option value="">All Types</option>
+                        <option value="salon" {% if request.GET.usage_type == 'salon' %}selected{% endif %}>Salon Use Only</option>
+                        <option value="retail" {% if request.GET.usage_type == 'retail' %}selected{% endif %}>Retail Only</option>
+                        <option value="both" {% if request.GET.usage_type == 'both' %}selected{% endif %}>Both</option>
+                    </select>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label for="stock_status" class="form-label">Stock Status</label>
+                    <select name="stock_status" id="stock_status" class="form-control">
+                        <option value="">All Statuses</option>
+                        <option value="in_stock" {% if request.GET.stock_status == 'in_stock' %}selected{% endif %}>In Stock Only</option>
+                        <option value="low_stock" {% if request.GET.stock_status == 'low_stock' %}selected{% endif %}>Low Stock Only</option>
+                        <option value="out_of_stock" {% if request.GET.stock_status == 'out_of_stock' %}selected{% endif %}>Out of Stock Only</option>
+                    </select>
+                </div>
+                <div class="col-12 text-end">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-filter"></i> Filter
+                    </button>
+                    <a href="{% url 'Stock_Management:inventory_value_report' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-undo"></i> Reset
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Value by Category</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Value by Usage Type</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="usageTypeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-light">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Inventory Value Breakdown</h5>
+                <span class="badge bg-primary">{{ products.count }} products</span>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Category</th>
+                            <th>Current Stock</th>
+                            <th>Cost Price</th>
+                            <th>Retail Price</th>
+                            <th>Inventory Value</th>
+                            <th>Retail Value</th>
+                            <th>Potential Profit</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in products %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'Stock_Management:product_detail' product_id=product.id %}">
+                                    {{ product.name }}
+                                </a>
+                                <small class="text-muted d-block">
+                                    {% if product.usage_type == 'salon' %}
+                                    Salon Use Only
+                                    {% elif product.usage_type == 'retail' %}
+                                    Retail Only
+                                    {% else %}
+                                    Both Salon and Retail
+                                    {% endif %}
+                                </small>
+                            </td>
+                            <td>{{ product.category.name }}</td>
+                            <td>{{ product.current_stock }}</td>
+                            <td>${{ product.cost_price }}</td>
+                            <td>${{ product.price }}</td>
+                            <td>${{ product.inventory_value|floatformat:2 }}</td>
+                            <td>${{ product.retail_value|floatformat:2 }}</td>
+                            <td>${{ product.potential_profit|floatformat:2 }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center">No products match the selected filters.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr class="table-light font-weight-bold">
+                            <td colspan="5" class="text-end">Totals:</td>
+                            <td>${{ total_inventory_value|floatformat:2 }}</td>
+                            <td>${{ potential_retail_value|floatformat:2 }}</td>
+                            <td>${{ potential_profit|floatformat:2 }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">Category Breakdown</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Products</th>
+                            <th>Total Stock</th>
+                            <th>Inventory Value</th>
+                            <th>Retail Value</th>
+                            <th>Potential Profit</th>
+                            <th>% of Total Value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for category in category_breakdown %}
+                        <tr>
+                            <td>{{ category.name }}</td>
+                            <td>{{ category.product_count }}</td>
+                            <td>{{ category.total_stock }}</td>
+                            <td>${{ category.inventory_value|floatformat:2 }}</td>
+                            <td>${{ category.retail_value|floatformat:2 }}</td>
+                            <td>${{ category.potential_profit|floatformat:2 }}</td>
+                            <td>{{ category.percentage|floatformat:1 }}%</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center">No categories found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Category Chart
+        const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+        const categoryData = JSON.parse('{{ category_chart_data_json|escapejs }}');
+        const categoryChart = new Chart(categoryCtx, {
+            type: 'pie',
+            data: {
+                labels: categoryData.labels,
+                datasets: [{
+                    data: categoryData.values,
+                    backgroundColor: [
+                        '#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b',
+                        '#5a5c69', '#858796', '#6f42c1', '#20c9a6', '#f8f9fc'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.label || '';
+                                let value = context.raw || 0;
+                                return label + ': $' + value.toFixed(2);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Usage Type Chart
+        const usageCtx = document.getElementById('usageTypeChart').getContext('2d');
+        const usageData = JSON.parse('{{ usage_type_data_json|escapejs }}');
+        const usageChart = new Chart(usageCtx, {
+            type: 'doughnut',
+            data: {
+                labels: usageData.labels,
+                datasets: [{
+                    data: usageData.values,
+                    backgroundColor: ['#4e73df', '#1cc88a', '#36b9cc']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.label || '';
+                                let value = context.raw || 0;
+                                return label + ': $' + value.toFixed(2);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock extra_js %}

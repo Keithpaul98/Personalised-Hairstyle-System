@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ notification.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h3 class="mb-0">
+                        <i class="fas fa-bell mr-2"></i>{{ notification.title }}
+                    </h3>
+                    <span class="badge badge-light">{{ notification.get_notification_type_display }}</span>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <p class="text-muted">
+                            <small>
+                                <i class="far fa-clock mr-1"></i>{{ notification.created_at|date:"F d, Y" }} at {{ notification.created_at|time:"g:i A" }}
+                            </small>
+                        </p>
+                        <div class="notification-message">
+                            {{ notification.message|linebreaks }}
+                        </div>
+                    </div>
+                    
+                    {% if redirect_url %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        <a href="{{ redirect_url }}" class="alert-link">Click here</a> to view the related item.
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="card-footer d-flex justify-content-between">
+                    <a href="{% url 'notifications:notification_list' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left mr-1"></i>Back to Notifications
+                    </a>
+                    
+                    {% if not notification.is_read %}
+                    <form method="post" action="{% url 'notifications:mark_notification_read' notification.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-check mr-1"></i>Mark as Read
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

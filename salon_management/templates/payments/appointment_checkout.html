@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h2 class="mb-0"><i class="fas fa-money-check-alt mr-2"></i>Appointment Payment</h2>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle mr-2"></i>Please review your appointment details and select a payment method.
+                    </div>
+                    
+                    <h4 class="mb-3">Appointment Details</h4>
+                    <div class="p-3 bg-light rounded mb-4">
+                        <div class="row mb-2">
+                            <div class="col-md-4 font-weight-bold">Service:</div>
+                            <div class="col-md-8">{{ appointment.service.name }}</div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-md-4 font-weight-bold">Stylist:</div>
+                            <div class="col-md-8">
+                                {% if appointment.stylist %}
+                                    {{ appointment.stylist.get_full_name|default:appointment.stylist.username }}
+                                {% else %}
+                                    No stylist assigned
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-md-4 font-weight-bold">Date:</div>
+                            <div class="col-md-8">{{ appointment.date }}</div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-md-4 font-weight-bold">Time:</div>
+                            <div class="col-md-8">{{ appointment.time }}</div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4 font-weight-bold">Price:</div>
+                            <div class="col-md-8">${{ appointment.service.price }}</div>
+                        </div>
+                    </div>
+                    
+                    <h4 class="mb-3">Select Payment Method</h4>
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-credit-card fa-3x mb-3 text-primary"></i>
+                                    <h5>Pay Online</h5>
+                                    <p class="text-muted">Secure payment with credit/debit card</p>
+                                    <form method="POST" action="{% url 'payments:appointment_checkout' appointment.id %}">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="payment_method" value="card">
+                                        <button type="submit" class="btn btn-primary btn-block">
+                                            <i class="fas fa-credit-card mr-2"></i>Pay Now
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-money-bill-wave fa-3x mb-3 text-success"></i>
+                                    <h5>Pay with Cash</h5>
+                                    <p class="text-muted">Pay at the salon during your appointment</p>
+                                    <form method="POST" action="{% url 'payments:appointment_checkout' appointment.id %}">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="payment_method" value="cash">
+                                        <button type="submit" class="btn btn-success btn-block">
+                                            <i class="fas fa-money-bill-wave mr-2"></i>Pay at Salon
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{% url 'User_Management:home' %}" class="btn btn-secondary">
+                            <i class="fas fa-home mr-2"></i>Back to Home
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

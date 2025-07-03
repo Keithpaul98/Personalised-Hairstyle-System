@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body bg-light">
+                    <h2 class="text-primary mb-0">
+                        <i class="fas fa-history mr-2"></i>
+                        {% if user_role == 'staff' %}
+                            My Service History
+                        {% else %}
+                            My Appointment History
+                        {% endif %}
+                    </h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            {% if appointments %}
+                <div class="card shadow">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Time</th>
+                                        {% if user_role == 'staff' %}
+                                            <th>Client</th>
+                                        {% else %}
+                                            <th>Stylist</th>
+                                        {% endif %}
+                                        <th>Service</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for appointment in appointments %}
+                                        <tr>
+                                            <td>{{ appointment.date }}</td>
+                                            <td>{{ appointment.time }}</td>
+                                            {% if user_role == 'staff' %}
+                                                <td>{{ appointment.customer.get_full_name|default:appointment.customer.username }}</td>
+                                            {% else %}
+                                                <td>
+                                                    {% if appointment.stylist %}
+                                                        <a href="{% url 'User_Management:stylist_profile' appointment.stylist.id %}">
+                                                            {{ appointment.stylist.get_full_name|default:appointment.stylist.username }}
+                                                        </a>
+                                                    {% else %}
+                                                        Not assigned
+                                                    {% endif %}
+                                                </td>
+                                            {% endif %}
+                                            <td>{{ appointment.service.name }}</td>
+                                            <td>
+                                                <span class="badge {% if appointment.status == 'Completed' %}badge-success{% elif appointment.status == 'Cancelled' %}badge-danger{% elif appointment.status == 'Confirmed' %}badge-primary{% else %}badge-warning{% endif %}">
+                                                    {{ appointment.status }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                {% if user_role != 'staff' and appointment.status == 'Completed' and not appointment.rating %}
+                                                    <a href="{% url 'appointments:rate_appointment' appointment.id %}" class="btn btn-sm btn-primary">
+                                                        <i class="fas fa-star mr-1"></i> Rate
+                                                    </a>
+                                                {% elif user_role == 'staff' %}
+                                                    <a href="{% url 'appointments:appointment_details' appointment.id %}" class="btn btn-sm btn-info">
+                                                        <i class="fas fa-eye mr-1"></i> Details
+                                                    </a>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle mr-2"></i>
+                    {% if user_role == 'staff' %}
+                        You don't have any past appointments with clients.
+                    {% else %}
+                        You don't have any past appointments.
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

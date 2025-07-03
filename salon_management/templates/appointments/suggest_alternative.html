@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Alternative Appointment Time{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning text-white">
+                    <h3 class="mb-0"><i class="fas fa-clock mr-2"></i>Alternative Time Suggested</h3>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <p><i class="fas fa-info-circle mr-2"></i>We don't have any stylists available for {{ service.name }} on {{ form.date.value }} at {{ form.time.value }}.</p>
+                        <p>However, we found an alternative time slot for you!</p>
+                    </div>
+                    
+                    <div class="suggested-time-card p-3 border rounded mb-4">
+                        <h5>Suggested Appointment:</h5>
+                        <p><strong>Service:</strong> {{ service.name }}</p>
+                        <p><strong>Date:</strong> {{ suggested_date|date:"l, F j, Y" }}</p>
+                        <p><strong>Time:</strong> {{ suggested_time|time:"g:i A" }}</p>
+                        
+                        {% if available_stylists %}
+                            <p><strong>Available Stylist:</strong> 
+                            {% for stylist in available_stylists %}
+                                {{ stylist.user.get_full_name|default:stylist.user.username }}{% if not forloop.last %}, {% endif %}
+                            {% endfor %}
+                            </p>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'appointments:book_appointment' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left mr-2"></i>Choose Different Time
+                        </a>
+                        <form method="post" action="{% url 'appointments:accept_alternative' %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="accept_alternative" value="true">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-check mr-2"></i>Accept This Time
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

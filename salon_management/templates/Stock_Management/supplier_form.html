@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock title %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>{{ page_title }}</h2>
+        <a href="{% url 'Stock_Management:supplier_list' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Suppliers
+        </a>
+    </div>
+
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+        <div class="alert alert-{% if message.tags == 'success' %}success{% elif message.tags == 'error' %}danger{% else %}info{% endif %} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="card">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">Supplier Information</h5>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.name.id_for_label }}" class="form-label">Supplier Name*</label>
+                        {{ form.name.errors }}
+                        <input type="text" name="{{ form.name.name }}" id="{{ form.name.id_for_label }}" class="form-control {% if form.name.errors %}is-invalid{% endif %}" value="{{ form.name.value|default:'' }}" required>
+                        {% if form.name.help_text %}
+                        <small class="form-text text-muted">{{ form.name.help_text }}</small>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.contact_person.id_for_label }}" class="form-label">Contact Person</label>
+                        {{ form.contact_person.errors }}
+                        <input type="text" name="{{ form.contact_person.name }}" id="{{ form.contact_person.id_for_label }}" class="form-control {% if form.contact_person.errors %}is-invalid{% endif %}" value="{{ form.contact_person.value|default:'' }}">
+                        {% if form.contact_person.help_text %}
+                        <small class="form-text text-muted">{{ form.contact_person.help_text }}</small>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.email.id_for_label }}" class="form-label">Email</label>
+                        {{ form.email.errors }}
+                        <input type="email" name="{{ form.email.name }}" id="{{ form.email.id_for_label }}" class="form-control {% if form.email.errors %}is-invalid{% endif %}" value="{{ form.email.value|default:'' }}">
+                        {% if form.email.help_text %}
+                        <small class="form-text text-muted">{{ form.email.help_text }}</small>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.phone.id_for_label }}" class="form-label">Phone</label>
+                        {{ form.phone.errors }}
+                        <input type="text" name="{{ form.phone.name }}" id="{{ form.phone.id_for_label }}" class="form-control {% if form.phone.errors %}is-invalid{% endif %}" value="{{ form.phone.value|default:'' }}">
+                        {% if form.phone.help_text %}
+                        <small class="form-text text-muted">{{ form.phone.help_text }}</small>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="{{ form.address.id_for_label }}" class="form-label">Address</label>
+                    {{ form.address.errors }}
+                    <textarea name="{{ form.address.name }}" id="{{ form.address.id_for_label }}" class="form-control {% if form.address.errors %}is-invalid{% endif %}" rows="3">{{ form.address.value|default:'' }}</textarea>
+                    {% if form.address.help_text %}
+                    <small class="form-text text-muted">{{ form.address.help_text }}</small>
+                    {% endif %}
+                </div>
+                
+                <div class="mb-3">
+                    <label for="{{ form.products.id_for_label }}" class="form-label">Products Supplied</label>
+                    {{ form.products.errors }}
+                    <select name="{{ form.products.name }}" id="{{ form.products.id_for_label }}" class="form-control select2 {% if form.products.errors %}is-invalid{% endif %}" multiple>
+                        {% for choice in form.products.field.choices %}
+                        <option value="{{ choice.0 }}" {% if choice.0 in form.products.value %}selected{% endif %}>{{ choice.1 }}</option>
+                        {% endfor %}
+                    </select>
+                    {% if form.products.help_text %}
+                    <small class="form-text text-muted">{{ form.products.help_text }}</small>
+                    {% endif %}
+                    <small class="form-text text-muted">Hold Ctrl (or Cmd on Mac) to select multiple products</small>
+                </div>
+                
+                <div class="mb-3 form-check">
+                    <input type="checkbox" name="{{ form.is_active.name }}" id="{{ form.is_active.id_for_label }}" class="form-check-input {% if form.is_active.errors %}is-invalid{% endif %}" {% if form.is_active.value %}checked{% endif %}>
+                    <label for="{{ form.is_active.id_for_label }}" class="form-check-label">Active Supplier</label>
+                    {% if form.is_active.help_text %}
+                    <small class="form-text text-muted">{{ form.is_active.help_text }}</small>
+                    {% endif %}
+                </div>
+                
+                {% if not supplier %}
+                <div class="mb-3 form-check">
+                    <input type="checkbox" name="create_order" id="create_order" class="form-check-input" value="yes">
+                    <label for="create_order" class="form-check-label">Create purchase order after adding supplier</label>
+                </div>
+                {% endif %}
+                
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> {% if supplier %}Update{% else %}Add{% endif %} Supplier
+                    </button>
+                    <a href="{% url 'Stock_Management:supplier_list' %}" class="btn btn-outline-secondary">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Initialize Select2 for better multi-select experience
+        $('.select2').select2({
+            theme: 'bootstrap4',
+            placeholder: 'Select products...',
+            allowClear: true
+        });
+    });
+</script>
+{% endblock extra_js %}

@@ -1,52 +1,250 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Profile</title>
-    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <a class="navbar-brand" href="{% url 'home' %}">MyStore</a>
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav ml-auto">
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'home' %}">Home</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'customer_products' %}">Products</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'view_cart' %}">Cart</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'profile' %}">My Profile</a>
-                </li>
-                <li class="nav-item">
-                    <a class = "nav-link" href="{% url 'custom_logout' %}">Logout</a>
-                </li>
-            </ul>
-        </div>
-    </nav>
-    <div class="container mt-5">
-        <h2>My Profile</h2>
-        <p>Here you can view and manage your profile information.</p>
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Profile{% endblock %}
 
-        <h3>Your Receipts</h3>
-        <ul>
-            {% for receipt in receipts %}
-                <li>
-                    Receipt #{{ receipt.id }} - ${{ receipt.total }} - <a href="{% url 'download_receipt' receipt.id %}">Download PDF</a>
-                </li>
-            {% endfor %}
-        </ul>
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <!-- Profile Information Card -->
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0"><i class="fas fa-user-circle mr-2"></i>Profile Information</h3>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <img src="{{ user.profile_image.url|default:'https://via.placeholder.com/150' }}" 
+                             alt="Profile Picture"
+                             class="rounded-circle img-thumbnail"
+                             style="width: 150px; height: 150px; object-fit: cover;">
+                        <h4 class="mt-3">{{ user.get_full_name|default:user.username }}</h4>
+                        <p class="text-muted">Member since {{ user.date_joined|date:"F Y" }}</p>
+                    </div>
+
+                    <!-- Loyalty Status -->
+                    <div class="card mb-4">
+                        <div class="card-header d-flex align-items-center">
+                            <i class="fas fa-crown me-2"></i>
+                            <h5 class="mb-0">Loyalty Status</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-2">
+                                <div class="col-6">
+                                    <strong>Points:</strong>
+                                </div>
+                                <div class="col-6">
+                                    <span class="badge bg-primary">{{ user.loyalty_points }}</span>
+                                </div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-6">
+                                    <strong>Total Earned:</strong>
+                                </div>
+                                <div class="col-6 d-flex align-items-center">
+                                    <span class="badge bg-info me-2">{{ user.total_earned_points }}</span>
+                                    <a href="{% url 'User_Management:reset_total_earned_points' %}" class="btn btn-sm btn-outline-secondary">
+                                        <i class="fas fa-sync-alt"></i>
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-6">
+                                    <strong>Discount:</strong>
+                                </div>
+                                <div class="col-6">
+                                    {% if user.discount > 0 %}
+                                    <span class="badge bg-success">{{ user.discount }}%</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">0%</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% if user.discount > 0 and user.discount_expiry %}
+                            <div class="row">
+                                <div class="col-6">
+                                    <strong>Valid until:</strong>
+                                </div>
+                                <div class="col-6">
+                                    <span class="text-muted">{{ user.discount_expiry|date:"F d, Y" }}</span>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Profile Update Form -->
+        <div class="col-md-8 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0"><i class="fas fa-edit mr-2"></i>Edit Profile</h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {% csrf_token %}
+                        {% for field in form %}
+                            <div class="form-group">
+                                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                <div class="{% if field.errors %}is-invalid{% endif %}">
+                                    {{ field }}
+                                </div>
+                                {% if field.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ field.errors }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save mr-2"></i>Update Profile
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Appointments History -->
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0"><i class="fas fa-history mr-2"></i>Recent Appointments</h3>
+                </div>
+                <div class="card-body">
+                    {% if appointments %}
+                        <div class="list-group">
+                            {% for appointment in appointments %}
+                                <div class="list-group-item list-group-item-action">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h5 class="mb-1">{{ appointment.service.name }}</h5>
+                                        <small class="text-muted">
+                                            {{ appointment.date|date:"M d, Y" }}
+                                        </small>
+                                    </div>
+                                    <p class="mb-1">
+                                        <i class="fas fa-clock mr-2"></i>{{ appointment.time|time:"g:i A" }}
+                                        <br>
+                                        <i class="fas fa-user-tie mr-2"></i>{{ appointment.stylist.name }}
+                                    </p>
+                                    <small class="text-muted">
+                                        Status: 
+                                        <span class="badge badge-{{ appointment.status|lower }}">
+                                            {{ appointment.status }}
+                                        </span>
+                                    </small>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <div class="text-center mt-3">
+                            <a href="{% url 'appointments:appointment_history' %}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-list mr-2"></i>View All Appointments
+                            </a>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">No appointments yet</p>
+                            <a href="{% url 'appointments:book_appointment' %}" class="btn btn-primary btn-sm">
+                                <i class="fas fa-calendar-plus mr-2"></i>Book Your First Appointment
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Receipts -->
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0"><i class="fas fa-receipt mr-2"></i>Recent Receipts</h3>
+                </div>
+                <div class="card-body">
+                    {% if receipts %}
+                        <div class="list-group">
+                            {% for receipt in receipts %}
+                                <div class="list-group-item list-group-item-action">
+                                    <div class="d-flex w-100 justify-content-between align-items-center">
+                                        <div>
+                                            <h5 class="mb-1">Receipt #{{ receipt.id }}</h5>
+                                            <p class="mb-1">${{ receipt.total }}</p>
+                                        </div>
+                                        <a href="{% url 'User_Management:download_receipt' receipt.id %}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-download mr-2"></i>Download
+                                        </a>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-file-invoice-dollar fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">No receipts available</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
     </div>
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-</body>
-</html>
+
+    <!-- Delete Profile Section -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h3 class="mb-0"><i class="fas fa-exclamation-triangle mr-2"></i>Danger Zone</h3>
+                </div>
+                <div class="card-body">
+                    <h5 class="text-danger">Delete Account</h5>
+                    <p class="text-muted">Once you delete your account, there is no going back. Please be certain.</p>
+                    <button class="btn btn-danger" id="deleteProfileBtn">
+                        <i class="fas fa-user-times mr-2"></i>Delete My Account
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_css %}
+<style>
+    .badge-pill {
+        padding: 0.5em 1em;
+    }
+    
+    .loyalty-info {
+        border-left: 4px solid var(--primary);
+    }
+
+    .card {
+        transition: transform 0.2s;
+    }
+
+    .card:hover {
+        transform: translateY(-5px);
+    }
+
+    .list-group-item-action:hover {
+        background-color: var(--light);
+    }
+
+    .badge-pending { background-color: #ffc107; color: #000; }
+    .badge-confirmed { background-color: #28a745; color: #fff; }
+    .badge-cancelled { background-color: #dc3545; color: #fff; }
+    .badge-completed { background-color: #17a2b8; color: #fff; }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('deleteProfileBtn').addEventListener('click', function() {
+    if (confirm("Are you sure you want to delete your profile? This action cannot be undone.")) {
+        window.location.href = "{% url 'User_Management:delete_profile' %}";
+    }
+});
+</script>
+{% endblock %}
+
+{% endblock %}

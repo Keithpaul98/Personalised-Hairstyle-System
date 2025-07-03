@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}MyStore{% endblock %}</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: rgb(32, 179, 130);
+            --primary-hover: rgb(28, 155, 112);
+            --primary-light: rgba(32, 179, 130, 0.1);
+            --text-dark: #333;
+            --text-light: #fff;
+        }
+
+        /* Navbar Styling */
+        .navbar {
+            background-color: var(--primary-color) !important;
+        }
+
+        .navbar-dark .navbar-nav .nav-link {
+            color: var(--text-light);
+            transition: opacity 0.3s ease;
+        }
+
+        .navbar-dark .navbar-nav .nav-link:hover {
+            opacity: 0.8;
+            color: var(--text-light) !important;
+        }
+
+        /* Button Styling */
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            color: var(--text-light);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+            border-color: var(--primary-hover);
+        }
+
+        .btn-outline-primary {
+            color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .btn-outline-primary:hover {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            color: var(--text-light);
+        }
+
+        /* Notification Badge */
+        .notification-badge {
+            background-color: var(--text-light);
+            color: var(--primary-color);
+        }
+
+        /* Dropdown Styling */
+        .dropdown-item:hover {
+            background-color: var(--primary-light);
+            color: var(--primary-color);
+        }
+
+        /* Links */
+        a {
+            color: var(--primary-color);
+        }
+
+        a:hover {
+            color: var(--primary-hover);
+            text-decoration: none;
+        }
+
+        /* Add these footer styles to your existing styles */
+        footer {
+            background-color: #333;
+            color: var(--text-light);
+            padding: 4rem 0 2rem 0;
+            margin-top: 4rem;
+        }
+
+        .footer-heading {
+            color: var(--primary-color);
+            font-size: 1.2rem;
+            margin-bottom: 1.5rem;
+            font-weight: 600;
+        }
+
+        .footer-links {
+            list-style: none;
+            padding: 0;
+        }
+
+        .footer-links li {
+            margin-bottom: 0.8rem;
+        }
+
+        .footer-links a {
+            color: var(--text-light);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            color: var(--primary-color);
+        }
+
+        .footer-social-icons a {
+            color: var(--text-light);
+            font-size: 1.5rem;
+            margin-right: 1rem;
+            transition: color 0.3s ease;
+        }
+
+        .footer-social-icons a:hover {
+            color: var(--primary-color);
+        }
+
+        .footer-bottom {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 3rem;
+            padding-top: 2rem;
+            text-align: center;
+        }
+
+        .contact-info i {
+            color: var(--primary-color);
+            margin-right: 0.5rem;
+            width: 20px;
+        }
+
+        .newsletter-form .form-control {
+            background-color: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: var(--text-light);
+            padding: 0.8rem;
+        }
+
+        .newsletter-form .form-control::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .newsletter-form .btn {
+            background-color: var(--primary-color);
+            border: none;
+            padding: 0.8rem 1.5rem;
+        }
+
+        /* Add these to your existing styles */
+        .dropdown-menu {
+            background-color: #fff;
+            border: none;
+            border-radius: 8px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+            padding: 0.5rem 0;
+        }
+
+        .dropdown-item {
+            padding: 0.5rem 1.5rem;
+            color: var(--text-dark);
+            transition: all 0.3s ease;
+        }
+
+        .dropdown-item:hover {
+            background-color: var(--primary-light);
+            color: var(--primary-color);
+            padding-left: 2rem;
+        }
+
+        .dropdown-item i {
+            color: var(--primary-color);
+            width: 20px;
+            text-align: center;
+        }
+
+        .dropdown-divider {
+            border-top-color: var(--primary-light);
+            margin: 0.3rem 0;
+        }
+
+        .navbar-nav .dropdown:hover .dropdown-menu {
+            display: block;
+        }
+
+        /* Add this to your existing styles */
+        .notification-badge {
+            position: absolute;
+            top: 0;
+            right: -5px;
+            padding: 3px 6px;
+            border-radius: 50%;
+            font-size: 0.7rem;
+            background-color: var(--text-light);
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+
+        .nav-item {
+            position: relative;
+        }
+
+     /* messaging styling */
+
+     body {
+  background: #f3f3f7;
+}
+
+#chat-widget {
+  max-width: 620px;
+  margin: 1rem auto;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 4px 24px rgba(142,95,255,0.08);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 80vh;
+}
+
+.chat-header {
+  background: #8e5fff;
+  color: #fff;
+  padding: 2rem 1rem 1rem 1rem;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  flex-direction: column;
+  text-align: center;
+}
+
+.chat-brand-avatar img {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  margin-bottom: 0.5rem;
+}
+
+.chat-brand-title {
+  font-size: 1.3rem;
+  font-weight: bold;
+  margin-bottom: 0.2rem;
+}
+
+.chat-brand-desc {
+  font-size: 1rem;
+  opacity: 0.95;
+}
+
+.chat-brand-sub {
+  font-size: 0.85em;
+  opacity: 0.8;
+}
+
+#messages-scroll-area {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 1.2rem 1rem;
+  background: #f9f8fd;
+  display: flex;
+  flex-direction: column;
+}
+
+#messages-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.chat-message {
+  display: flex;
+  align-items: flex-end;
+  margin-bottom: 1.1em;
+}
+
+.chat-message-sent {
+  flex-direction: row-reverse;
+}
+
+.chat-message-received .chat-bubble {
+  background: #fff;
+  color: #222;
+  border-radius: 14px 14px 14px 4px;
+  box-shadow: 0 2px 8px rgba(142,95,255,0.06);
+}
+
+.chat-message-sent .chat-bubble {
+  background: #8e5fff;
+  color: #fff;
+  border-radius: 14px 14px 4px 14px;
+  box-shadow: 0 2px 8px rgba(142,95,255,0.13);
+}
+
+.chat-bubble {
+  padding: 0.75em 1em;
+  max-width: 80%;
+  font-size: 1rem;
+  margin: 0 0.5em;
+  word-break: break-word;
+}
+
+.chat-bubble-content {
+  margin-bottom: 0.2em;
+}
+
+.chat-bubble-meta {
+  font-size: 0.8em;
+  opacity: 0.7;
+  text-align: right;
+}
+
+.chat-avatar img {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  box-shadow: 0 2px 6px rgba(142,95,255,0.13);
+}
+
+.chat-form {
+  background: #fff;
+  padding: 1rem;
+  border-top: 1px solid #f0f0f0;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+.chat-input-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+}
+
+.chat-form textarea,
+.chat-form input[type="text"] {
+  flex: 1 1 auto;
+  border: none;
+  border-radius: 18px;
+  padding: 0.7em 1em;
+  font-size: 1rem;
+  background: #f6f6fa;
+  margin-right: 0.5em;
+  resize: none;
+}
+
+.chat-send-btn {
+  background: #8e5fff;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+  cursor: pointer;
+}
+
+.chat-send-btn:hover {
+  background: #7b4de7;
+}
+
+.chat-message-empty {
+  color: #aaa;
+  text-align: center;
+  margin: 2em 0;
+}
+
+.badge-warning {
+    background: #ffe066;
+    color: #7a6400;
+    font-size: 0.8em;
+    border-radius: 8px;
+    padding: 2px 8px;
+}
+.badge-success {
+    background: #6edc7a;
+    color: #185c2b;
+    font-size: 0.8em;
+    border-radius: 8px;
+    padding: 2px 8px;
+}
+
+ /* thread styling */
+
+
+.thread-list-header {
+  background: #28a745;
+  color: #fff;
+  font-size: 1.35rem;
+  font-weight: bold;
+  padding: 1rem 1.5rem;
+  margin: 2rem 0 1rem 0;
+  border-radius: 8px 8px 0 0;
+  display: flex;
+  align-items: center;
+  gap: 0.7em;
+}
+
+.thread-list-container {
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.thread-card {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-left: 5px solid #28a745;
+  border-radius: 8px;
+  margin-bottom: 1.2rem;
+  padding: 1rem 1.2rem;
+  box-shadow: 0 2px 8px rgba(40,167,69,0.03);
+}
+
+.thread-card-unread {
+  border-left: 5px solid #dc3545;
+  background: #fff7f9;
+}
+
+.thread-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1em;
+  margin-bottom: 0.6em;
+}
+
+.thread-title {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #28a745;
+}
+
+.thread-updated {
+  font-size: 0.9em;
+  color: #888;
+}
+
+.thread-card-body {
+  display: flex;
+  align-items: flex-start;
+  gap: 1em;
+  margin-bottom: 0.7em;
+}
+
+.thread-avatar img {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  box-shadow: 0 2px 6px rgba(40,167,69,0.09);
+}
+
+.thread-info {
+  flex: 1;
+  font-size: 0.97em;
+}
+
+.thread-preview {
+  color: #333;
+  font-size: 0.97em;
+}
+
+.thread-card-actions {
+  display: flex;
+  gap: 0.6em;
+}
+
+
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#">Impact Looks</a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    {% if user.is_authenticated %}
+                        {% if user.role == 'admin' %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'User_Management:admin_dashboard' %}">
+                                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                                </a>
+                            </li>
+                            <!-- User Management Dropdown -->
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="userManagementDropdown" role="button" data-toggle="dropdown">
+                                    <i class="fas fa-users-cog mr-1"></i> User Management
+                                </a>
+                                <div class="dropdown-menu">
+                                    <a class="dropdown-item" href="{% url 'User_Management:add_staff' %}">
+                                        <i class="fas fa-user-plus mr-2"></i>Add Staff
+                                    </a>
+                                    <a class="dropdown-item" href="{% url 'User_Management:admin_dashboard' %}#staff">
+                                        <i class="fas fa-user-edit mr-2"></i>Manage Staff
+                                    </a>
+                                    <a class="dropdown-item" href="{% url 'User_Management:admin_dashboard' %}#customers">
+                                        <i class="fas fa-user-friends mr-2"></i>Customer Accounts
+                                    </a>
+                                </div>
+                            </li>
+                            <!-- Services Management Dropdown -->
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="servicesDropdown" role="button" data-toggle="dropdown">
+                                    <i class="fas fa-cut mr-1"></i> Services
+                                </a>
+                                <div class="dropdown-menu">
+                                    <a class="dropdown-item" href="{% url 'User_Management:add_service' %}">
+                                        <i class="fas fa-plus-circle mr-2"></i>Add Service
+                                    </a>
+                                    <a class="dropdown-item" href="{% url 'User_Management:admin_dashboard' %}#services">
+                                        <i class="fas fa-list-alt mr-2"></i>Manage Services
+                                    </a>
+                                    <a class="dropdown-item" href="{% url 'User_Management:admin_dashboard' %}#categories-section">
+                                        <i class="fas fa-tags mr-2"></i>Service Categories
+                                    </a>
+                                </div>
+                            </li>
+                            <!-- Stock Management Dropdown (Already exists) -->
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="stockDropdown" role="button" data-toggle="dropdown">
+                                    <i class="fas fa-warehouse mr-1"></i> Stock Management
+                                </a>
+                                <div class="dropdown-menu">
+                                    <a class="dropdown-item" href="{% url 'Stock_Management:dashboard' %}">
+                                        <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
+                                    </a>
+                                    <a class="dropdown-item" href="{% url 'Stock_Management:product_list' %}">
+                                        <i class="fas fa-box mr-2"></i>Products
+                                    </a>
+                                    <a class="dropdown-item" href="{% url 'Stock_Management:transaction_list' %}">
+                                        <i class="fas fa-exchange-alt mr-2"></i>Transactions
+                                    </a>
+                                    <a class="dropdown-item" href="{% url 'Stock_Management:category_list' %}">
+                                        <i class="fas fa-tags mr-2"></i>Categories
+                                    </a>
+                                    <a class="dropdown-item" href="{% url 'Stock_Management:supplier_list' %}">
+                                        <i class="fas fa-truck mr-2"></i>Suppliers
+                                    </a>
+                                    <a class="dropdown-item" href="{% url 'Stock_Management:purchase_order_list' %}">
+                                        <i class="fas fa-file-invoice mr-2"></i>Purchase Orders
+                                    </a>
+                                </div>
+                            </li>
+                            <!-- Reporting Section -->
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="reportingDropdown" role="button" data-toggle="dropdown">
+                                    <i class="fas fa-chart-bar mr-1"></i> Reports
+                                </a>
+                                <div class="dropdown-menu">
+                                    <a class="dropdown-item" href="{% url 'reporting:dashboard' %}">
+                                        <i class="fas fa-tachometer-alt mr-2"></i>Reports Dashboard
+                                    </a>
+                                    <a class="dropdown-item" href="{% url 'reporting:generate_report' %}">
+                                        <i class="fas fa-file-alt mr-2"></i>Generate Report
+                                    </a>
+                                    <a class="dropdown-item" href="{% url 'reporting:sales_vs_salon_report' %}">
+                                        <i class="fas fa-chart-line mr-2"></i>Sales vs Salon Report
+                                    </a>
+                                </div>
+                            </li>
+                        {% elif user.role == 'staff' %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'User_Management:staff_dashboard' %}">
+                                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'User_Management:stylist_directory' %}">
+                                    <i class="fas fa-users"></i> Stylist Directory
+                                </a>
+                            </li>
+                            <!-- Appointments for staff -->
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="appointmentsDropdown" role="button" data-toggle="dropdown">
+                                    <i class="far fa-calendar-alt mr-1"></i> Appointments
+                                    {% if request.user.role == 'staff' and today_appointments_count > 0 %}
+                                        <span class="badge badge-light">{{ today_appointments_count }}</span>
+                                    {% endif %}
+                                </a>
+                                <div class="dropdown-menu">
+                                    <a class="dropdown-item" href="{% url 'appointments:admin_appointments' %}">
+                                        <i class="fas fa-list mr-2"></i>All Appointments
+                                    </a>
+                                    <a class="dropdown-item" href="{% url 'appointments:admin_appointments' %}?date={{ today_date|date:'Y-m-d' }}">
+                                        <i class="fas fa-calendar-day mr-2"></i>Today's Appointments
+                                        {% if request.user.role == 'staff' and today_appointments_count > 0 %}
+                                            <span class="badge badge-primary ml-1">{{ today_appointments_count }}</span>
+                                        {% endif %}
+                                    </a>
+                                    <a class="dropdown-item" href="{% url 'appointments:admin_appointments' %}?status=Pending">
+                                        <i class="fas fa-clock mr-2"></i>Pending Appointments
+                                    </a>
+                                    <div class="dropdown-divider"></div>
+                                    <a class="dropdown-item" href="{% url 'appointments:appointment_history' %}">
+                                        <i class="fas fa-history mr-2"></i>Appointment History
+                                    </a>
+                                </div>
+                            </li>
+                        {% else %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'User_Management:home' %}">
+                                    <i class="fas fa-home"></i> Home
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'User_Management:customer_products' %}">
+                                    <i class="fas fa-shopping-bag mr-1"></i> Products
+                                </a>
+                            </li>
+                            <!-- Add Appointments Dropdown -->
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="appointmentsDropdown" role="button" data-toggle="dropdown">
+                                    <i class="far fa-calendar-alt mr-1"></i> Appointments
+                                </a>
+                                <div class="dropdown-menu">
+                                    <a class="dropdown-item" href="{% url 'appointments:book_appointment' %}">
+                                        <i class="fas fa-calendar-plus mr-2"></i>Book Appointment
+                                    </a>
+                                    <a class="dropdown-item" href="{% url 'appointments:my_appointments' %}">
+                                        <i class="fas fa-history mr-2"></i>My Appointments
+                                    </a>
+                                    <a class="dropdown-item" href="{% url 'appointments:appointment_history' %}">
+                                        <i class="fas fa-clock mr-2"></i>Appointment History
+                                    </a>
+                                </div>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'User_Management:view_cart' %}">
+                                    <i class="fas fa-shopping-cart mr-1"></i> Cart
+                                    {% if cart_count > 0 %}
+                                        <span class="notification-badge">{{ cart_count }}</span>
+                                    {% endif %}
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'virtual_tryon:home' %}">
+                                    <i class="fas fa-camera"></i> Virtual Try-On
+                                </a>
+                            </li>
+                        {% endif %}
+                    {% endif %}
+                </ul>
+                <ul class="navbar-nav ml-auto">
+                    {% if user.is_authenticated %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'notifications:notification_list' %}">
+                                <i class="fas fa-bell mr-1"></i> Notifications
+                                {% if unread_notifications_count > 0 %}
+                                    <span class="notification-badge">{{ unread_notifications_count }}</span>
+                                {% endif %}
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            {% if user.is_staff %}
+                            <a class="nav-link" href="{% url 'conversations:thread_list' %}">
+                                <i class="fas fa-envelope mr-1"></i> Messages
+                                {% if unread_messages_count > 0 %}
+        <span class="notification-badge">{{ unread_messages_count }}</span>
+    {% endif %}
+                            </a>
+                            {% else %}
+                            <a class="nav-link" href="{% url 'conversations:thread_list' %}">
+                                <i class="fas fa-envelope mr-1"></i> Contact Admin
+                                {% if unread_messages_count > 0 %}
+                                    <span class="notification-badge">{{ unread_messages_count }}</span>
+                                {% endif %}
+                            </a>
+                            {% endif %}
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-toggle="dropdown">
+                                <i class="fas fa-user-circle mr-1"></i> {{ user.username }}
+                            </a>
+                            <div class="dropdown-menu dropdown-menu-right">
+                                {% if user.role == 'staff' %}
+                                    <a class="dropdown-item" href="{% url 'User_Management:stylist_profile' user.id %}">
+                                        <i class="fas fa-user mr-2"></i>My Profile
+                                    </a>
+                                    <a class="dropdown-item" href="{% url 'User_Management:staff_dashboard' %}">
+                                        <i class="fas fa-tachometer-alt mr-2"></i>Staff Dashboard
+                                    </a>
+                                {% elif user.role == 'admin' %}
+                                    <a class="dropdown-item" href="{% url 'User_Management:profile' %}">
+                                        <i class="fas fa-user mr-2"></i>Profile
+                                    </a>
+                                    <a class="dropdown-item" href="{% url 'User_Management:admin_dashboard' %}">
+                                        <i class="fas fa-tachometer-alt mr-2"></i>Admin Dashboard
+                                    </a>
+                                {% else %}
+                                    <a class="dropdown-item" href="{% url 'User_Management:profile' %}">
+                                        <i class="fas fa-user mr-2"></i>Profile
+                                    </a>
+                                {% endif %}
+                                <div class="dropdown-divider"></div>
+                                <a class="dropdown-item" href="{% url 'User_Management:custom_logout' %}">
+                                    <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                                </a>
+                            </div>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'User_Management:custom_login' %}">
+                                <i class="fas fa-sign-in-alt mr-1"></i> Login
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'User_Management:customer_registration' %}">
+                                <i class="fas fa-user-plus mr-1"></i> Register
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-5 pt-4">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            {% endfor %}
+        {% endif %}
+        
+        {% block content %}
+        {% endblock %}
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="row">
+                <!-- About Column -->
+                <div class="col-lg-4 mb-4">
+                    <h5 class="footer-heading">About Impact Looks</h5>
+                    <p>We are dedicated to providing exceptional beauty services and creating unforgettable experiences for our clients. Your beauty journey starts here.</p>
+                    <div class="footer-social-icons mt-3">
+                        <a href="#"><i class="fab fa-facebook"></i></a>
+                        <a href="#"><i class="fab fa-instagram"></i></a>
+                        <a href="#"><i class="fab fa-twitter"></i></a>
+                        <a href="#"><i class="fab fa-pinterest"></i></a>
+                    </div>
+                </div>
+
+                <!-- Quick Links Column -->
+                <div class="col-lg-2 col-md-6 mb-4">
+                    <h5 class="footer-heading">Quick Links</h5>
+                    <ul class="footer-links">
+                        <li><a href="{% url 'User_Management:home' %}">Home</a></li>
+                        <li><a href="{% url 'services:service_list' %}">Services</a></li>
+                        <li><a href="{% url 'User_Management:customer_products' %}">Products</a></li>
+                        <li><a href="{% url 'conversations:thread_list' %}">Contact</a></li>
+                        {% if user.is_authenticated %}
+                            <li><a href="{% url 'User_Management:view_cart' %}">Cart</a></li>
+                        {% else %}
+                            <li><a href="{% url 'User_Management:custom_login' %}">Login</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+
+                <!-- Services Column -->
+                <div class="col-lg-2 col-md-6 mb-4">
+                    <h5 class="footer-heading">Services</h5>
+                    <ul class="footer-links">
+                        <li><a href="#">Hair Styling</a></li>
+                        <li><a href="#">Haircuts</a></li>
+                        <li><a href="#">Hair care</a></li>
+                       
+                    </ul>
+                </div>
+
+                <!-- Contact Info Column -->
+                <div class="col-lg-4 mb-4">
+                    <h5 class="footer-heading">Contact Us</h5>
+                    <div class="contact-info">
+                        <p><i class="fas fa-map-marker-alt"></i> Chichiri Shopping Mall, Chichiri, Blantyre</p>
+                        <p><i class="fas fa-phone"></i> 088188288</p>
+                        <p><i class="fas fa-envelope"></i> info@impactlooks.com</p>
+                    </div>
+                    <div class="newsletter-form mt-4">
+                        <h5 class="footer-heading">Newsletter</h5>
+                        <form class="d-flex">
+                            <input type="email" class="form-control me-2" placeholder="Enter your email">
+                            <button type="submit" class="btn btn-primary">Subscribe</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Bottom -->
+            <div class="footer-bottom">
+                <div class="row">
+                    <div class="col-12">
+                        <p class="mb-0">&copy; {% now "Y" %} Impact Looks. All rights reserved.</p>
+                        <small class="mt-2 d-block">
+                            <a href="#">Privacy Policy</a> | 
+                            <a href="#">Terms of Service</a> | 
+                            <a href="#">Cookie Policy</a>
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}Hairstyles{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="text-center">Hairstyles</h1>
+    <div class="row">
+        {% for hairstyle in hairstyles %}
+        <div class="col-md-3 mb-4">
+            <div class="card h-100">
+                <img src="{{ hairstyle.image_url }}" class="card-img-top" alt="{{ hairstyle.name }}">
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title">{{ hairstyle.name }}</h5>
+                    <p class="card-text">{{ hairstyle.description }}</p>
+                    <p class="card-text"><strong>MK{{ hairstyle.price }}</strong></p>
+                    <a href="{% url 'services:service_details' hairstyle.id %}" class="btn btn-primary mt-auto">View Details</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

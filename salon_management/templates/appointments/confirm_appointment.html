@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Confirm Appointment{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0"><i class="fas fa-calendar-check mr-2"></i>Confirm Your Appointment</h3>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle mr-2"></i>Please review your appointment details before confirming.
+                    </div>
+
+                    <div class="appointment-details p-4 bg-light rounded mb-4">
+                        <h4 class="mb-3">Appointment Details</h4>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-4 font-weight-bold">Service:</div>
+                            <div class="col-md-8">{{ service.name }}</div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-4 font-weight-bold">Date:</div>
+                            <div class="col-md-8">{{ date|date:"l, F j, Y" }}</div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-4 font-weight-bold">Time:</div>
+                            <div class="col-md-8">{{ time|time:"g:i A" }}</div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-4 font-weight-bold">Duration:</div>
+                            <div class="col-md-8">{{ duration }} minutes</div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-4 font-weight-bold">Stylist:</div>
+                            <div class="col-md-8">{{ appointment.stylist.get_full_name|default:appointment.stylist.username }}</div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-4 font-weight-bold">Price:</div>
+                            <div class="col-md-8">MK{{ price }}</div>
+                        </div>
+                    </div>
+
+                    <form method="post" action="{% url 'appointments:confirm_appointment' %}">
+                        {% csrf_token %}
+                        
+                        <!-- Hidden fields to carry over the form data -->
+                        {% for key, value in form_data.items %}
+                            {% if key != 'csrfmiddlewaretoken' %}
+                                <input type="hidden" name="{{ key }}" value="{{ value }}">
+                            {% endif %}
+                        {% endfor %}
+                        
+                        <input type="hidden" name="stylist_id" value="{{ appointment.stylist.id }}">
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'appointments:book_appointment' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left mr-2"></i>Back
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-check mr-2"></i>Confirm Appointment
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

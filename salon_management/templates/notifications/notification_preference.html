@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Notification Preferences{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0"><i class="fas fa-cog mr-2"></i>Notification Preferences</h3>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="form-group">
+                            <label class="font-weight-bold">Notification Types</label>
+                            <div class="custom-control custom-switch mb-2">
+                                <input type="checkbox" class="custom-control-input" id="appointment_notifications" name="appointment_notifications" {% if preferences.appointment_notifications %}checked{% endif %}>
+                                <label class="custom-control-label" for="appointment_notifications">Appointment Notifications</label>
+                                <small class="form-text text-muted">Receive notifications about new appointments, changes, and reminders.</small>
+                            </div>
+                            
+                            <div class="custom-control custom-switch mb-2">
+                                <input type="checkbox" class="custom-control-input" id="stock_notifications" name="stock_notifications" {% if preferences.stock_notifications %}checked{% endif %}>
+                                <label class="custom-control-label" for="stock_notifications">Stock Alerts</label>
+                                <small class="form-text text-muted">Receive notifications about low stock and inventory changes.</small>
+                            </div>
+                            
+                            <div class="custom-control custom-switch mb-2">
+                                <input type="checkbox" class="custom-control-input" id="payment_notifications" name="payment_notifications" {% if preferences.payment_notifications %}checked{% endif %}>
+                                <label class="custom-control-label" for="payment_notifications">Payment Notifications</label>
+                                <small class="form-text text-muted">Receive notifications about payment confirmations and receipts.</small>
+                            </div>
+                            
+                            <div class="custom-control custom-switch mb-2">
+                                <input type="checkbox" class="custom-control-input" id="system_notifications" name="system_notifications" {% if preferences.system_notifications %}checked{% endif %}>
+                                <label class="custom-control-label" for="system_notifications">System Announcements</label>
+                                <small class="form-text text-muted">Receive important system-wide announcements and updates.</small>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group mt-4">
+                            <label for="delivery_method" class="font-weight-bold">Delivery Method</label>
+                            <select class="form-control" id="delivery_method" name="delivery_method">
+                                <option value="in_app" {% if preferences.delivery_method == 'in_app' %}selected{% endif %}>In-App Notifications</option>
+                                <option value="email" {% if preferences.delivery_method == 'email' %}selected{% endif %}>Email Notifications</option>
+                                <option value="sms" {% if preferences.delivery_method == 'sms' %}selected{% endif %}>SMS Notifications</option>
+                            </select>
+                            <small class="form-text text-muted">Choose how you want to receive your notifications.</small>
+                        </div>
+                        
+                        <div class="text-right mt-4">
+                            <a href="{% url 'notifications:notification_list' %}" class="btn btn-secondary mr-2">
+                                <i class="fas fa-arrow-left mr-1"></i>Back to Notifications
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save mr-1"></i>Save Preferences
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

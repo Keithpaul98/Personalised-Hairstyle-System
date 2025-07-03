@@ -1,0 +1,218 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Customers{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <nav class="col-md-2 d-none d-md-block sidebar">
+            <div class="sidebar-sticky">
+                <div class="text-center mb-4">
+                    <img src="{{ user.profile_image.url|default:'https://via.placeholder.com/80' }}" 
+                         alt="Staff Profile" 
+                         class="staff-logo rounded-circle">
+                    <h4 class="text-white mt-2" style="text-shadow: 1px 1px 3px rgba(0,0,0,0.8);">{{ user.get_full_name }}</h4>
+                    <p class="text-light">{{ user.expertise }}</p>
+                </div>
+                <div class="nav flex-column">
+                    <a class="nav-link {% if active_tab == 'overview' %}active{% endif %}" href="{% url 'User_Management:staff_dashboard' %}">
+                        <i class="fas fa-home mr-2"></i>Overview
+                    </a>
+                    <a class="nav-link {% if active_tab == 'appointments' %}active{% endif %}" href="{% url 'appointments:admin_appointments' %}">
+                        <i class="fas fa-calendar-check mr-2"></i>Appointments
+                    </a>
+                    <a class="nav-link {% if active_tab == 'customers' %}active{% endif %}" href="{% url 'User_Management:customer_list' %}">
+                        <i class="fas fa-users mr-2"></i>My Customers
+                    </a>
+                    <a class="nav-link {% if active_tab == 'profile' %}active{% endif %}" href="{% url 'User_Management:stylist_profile' user.id %}">
+                        <i class="fas fa-user-circle mr-2"></i>My Profile
+                    </a>
+                    <a class="nav-link {% if active_tab == 'history' %}active{% endif %}" href="{% url 'appointments:appointment_history' %}">
+                        <i class="fas fa-history mr-2"></i>Appointment History
+                    </a>
+                    <a class="nav-link text-danger" href="{% url 'User_Management:custom_logout' %}">
+                        <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                    </a>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main role="main" class="col-md-9 ml-sm-auto col-lg-10 px-4">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2"><i class="fas fa-users mr-2"></i>My Customers</h1>
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    <div class="input-group">
+                        <input type="text" id="customerSearch" class="form-control" placeholder="Search customers...">
+                        <div class="input-group-append">
+                            <button class="btn btn-outline-secondary" type="button">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Customer List -->
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-user-friends mr-2"></i>Customer List</h5>
+                </div>
+                <div class="card-body">
+                    {% if customer_data %}
+                        <div class="table-responsive">
+                            <table class="table table-hover" id="customerTable">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th>Customer</th>
+                                        <th>Contact</th>
+                                        <th>Appointments</th>
+                                        <th>Favorite Service</th>
+                                        <th>Last Visit</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for data in customer_data %}
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <img src="{{ data.customer.profile_image.url|default:'https://via.placeholder.com/40' }}" 
+                                                     alt="{{ data.customer.get_full_name }}" 
+                                                     class="rounded-circle mr-2" 
+                                                     style="width: 40px; height: 40px; object-fit: cover;">
+                                                <div>
+                                                    <strong>{{ data.customer.get_full_name }}</strong>
+                                                    <div class="small text-muted">Customer since: {{ data.customer.date_joined|date:"M Y" }}</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            {% if data.customer.email %}
+                                                <div><i class="fas fa-envelope mr-1"></i> {{ data.customer.email }}</div>
+                                            {% endif %}
+                                            {% if data.customer.phone_number %}
+                                                <div><i class="fas fa-phone mr-1"></i> {{ data.customer.phone_number }}</div>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="d-flex">
+                                                <div class="mr-3" title="Completed">
+                                                    <span class="badge badge-success badge-pill">{{ data.completed_count }}</span>
+                                                    <small class="d-block text-muted">Completed</small>
+                                                </div>
+                                                <div class="mr-3" title="Cancelled">
+                                                    <span class="badge badge-danger badge-pill">{{ data.cancelled_count }}</span>
+                                                    <small class="d-block text-muted">Cancelled</small>
+                                                </div>
+                                                <div title="Upcoming">
+                                                    <span class="badge badge-info badge-pill">{{ data.upcoming_count }}</span>
+                                                    <small class="d-block text-muted">Upcoming</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            {% if data.most_common_service %}
+                                                <span class="badge badge-primary">{{ data.most_common_service }}</span>
+                                            {% else %}
+                                                <span class="text-muted">N/A</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if data.latest_appointment %}
+                                                {{ data.latest_appointment.date|date:"M d, Y" }}
+                                                <small class="d-block text-muted">{{ data.latest_appointment.time|time:"g:i A" }}</small>
+                                            {% else %}
+                                                <span class="text-muted">N/A</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group">
+                                                <a href="{% url 'appointments:appointment_history' %}?customer_id={{ data.customer.id }}" class="btn btn-sm btn-outline-secondary">
+                                                    <i class="fas fa-history"></i> View History
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle mr-2"></i> You don't have any customers yet. When customers book appointments with you, they will appear here.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Simple search functionality
+    $(document).ready(function() {
+        $("#customerSearch").on("keyup", function() {
+            var value = $(this).val().toLowerCase();
+            $("#customerTable tbody tr").filter(function() {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+            });
+        });
+    });
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Sidebar Styles */
+    .sidebar {
+        background: linear-gradient(to bottom, #343a40, #23272b);
+        min-height: 100vh;
+        box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        padding-top: 20px;
+    }
+    
+    .sidebar-sticky {
+        position: sticky;
+        top: 0;
+        height: calc(100vh - 48px);
+        padding-top: 0.5rem;
+        overflow-x: hidden;
+        overflow-y: auto;
+    }
+    
+    .staff-logo {
+        width: 80px;
+        height: 80px;
+        object-fit: cover;
+        border: 3px solid rgba(255,255,255,0.3);
+    }
+    
+    .sidebar .nav-link {
+        color: rgba(255,255,255,0.75);
+        padding: 0.75rem 1rem;
+        margin: 0.2rem 0;
+        border-radius: 0.25rem;
+        transition: all 0.3s;
+    }
+    
+    .sidebar .nav-link:hover {
+        color: #fff;
+        background-color: rgba(255,255,255,0.1);
+    }
+    
+    .sidebar .nav-link.active {
+        color: #fff;
+        background-color: rgba(0,123,255,0.5);
+    }
+    
+    .sidebar .nav-link i {
+        width: 20px;
+        text-align: center;
+    }
+</style>
+{% endblock %}

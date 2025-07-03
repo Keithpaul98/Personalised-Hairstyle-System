@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}
+    {% if product %}Edit {{ product.name }}{% else %}Add New Product{% endif %}
+{% endblock title %}
+
+{% block extra_css %}
+<style>
+    .required-field label:after {
+        content: " *";
+        color: red;
+    }
+</style>
+{% endblock extra_css %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>{% if product %}Edit {{ product.name }}{% else %}Add New Product{% endif %}</h2>
+        <a href="{% url 'Stock_Management:product_list' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Products
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">Product Information</h5>
+        </div>
+        <div class="card-body">
+            <form method="post" enctype="multipart/form-data" novalidate>
+                {% csrf_token %}
+                
+                {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    {{ form.non_field_errors }}
+                </div>
+                {% endif %}
+                
+                <div class="row">
+                    <!-- Product Details -->
+                    <div class="col-md-6">
+                        <h5 class="mb-3">Basic Information</h5>
+                        
+                        <!-- Name -->
+                        <div class="mb-3 required-field">
+                            <label for="{{ form.name.id_for_label }}" class="form-label">Name</label>
+                            {{ form.name.errors }}
+                            <input type="text" name="{{ form.name.name }}" id="{{ form.name.id_for_label }}" 
+                                   class="form-control {% if form.name.errors %}is-invalid{% endif %}" 
+                                   value="{{ form.name.value|default:'' }}" required>
+                            {% if form.name.help_text %}
+                            <small class="form-text text-muted">{{ form.name.help_text }}</small>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Category -->
+                        <div class="mb-3 required-field">
+                            <label for="{{ form.category.id_for_label }}" class="form-label">Category</label>
+                            {{ form.category.errors }}
+                            <select name="{{ form.category.name }}" id="{{ form.category.id_for_label }}" 
+                                   class="form-select {% if form.category.errors %}is-invalid{% endif %}" required>
+                                <option value="">Select a category</option>
+                                {% for choice in form.category.field.choices %}
+                                <option value="{{ choice.0 }}" {% if form.category.value|stringformat:"s" == choice.0|stringformat:"s" %}selected{% endif %}>
+                                    {{ choice.1 }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            {% if form.category.help_text %}
+                            <small class="form-text text-muted">{{ form.category.help_text }}</small>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Description -->
+                        <div class="mb-3">
+                            <label for="{{ form.description.id_for_label }}" class="form-label">Description</label>
+                            {{ form.description.errors }}
+                            <textarea name="{{ form.description.name }}" id="{{ form.description.id_for_label }}" 
+                                      class="form-control {% if form.description.errors %}is-invalid{% endif %}" 
+                                      rows="4">{{ form.description.value|default:'' }}</textarea>
+                            {% if form.description.help_text %}
+                            <small class="form-text text-muted">{{ form.description.help_text }}</small>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Pricing -->
+                        <h5 class="mb-3 mt-4">Pricing</h5>
+                        
+                        <div class="row">
+                            <!-- Selling Price -->
+                            <div class="col-md-6 mb-3 required-field">
+                                <label for="{{ form.price.id_for_label }}" class="form-label">Selling Price (MK)</label>
+                                {{ form.price.errors }}
+                                <input type="number" step="0.01" min="0" name="{{ form.price.name }}" id="{{ form.price.id_for_label }}" 
+                                       class="form-control {% if form.price.errors %}is-invalid{% endif %}" 
+                                       value="{{ form.price.value|default:'' }}" required>
+                                {% if form.price.help_text %}
+                                <small class="form-text text-muted">{{ form.price.help_text }}</small>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Cost Price -->
+                            <div class="col-md-6 mb-3 required-field">
+                                <label for="{{ form.cost_price.id_for_label }}" class="form-label">Cost Price (MK)</label>
+                                {{ form.cost_price.errors }}
+                                <input type="number" step="0.01" min="0" name="{{ form.cost_price.name }}" id="{{ form.cost_price.id_for_label }}" 
+                                       class="form-control {% if form.cost_price.errors %}is-invalid{% endif %}" 
+                                       value="{{ form.cost_price.value|default:'' }}" required>
+                                {% if form.cost_price.help_text %}
+                                <small class="form-text text-muted">{{ form.cost_price.help_text }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Stock and Details -->
+                    <div class="col-md-6">
+                        <h5 class="mb-3">Stock Information</h5>
+                        
+                        <div class="row">
+                            <!-- Current Stock (for new products) -->
+                            {% if not product %}
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.initial_stock.id_for_label }}" class="form-label">Initial Stock</label>
+                                {{ form.initial_stock.errors }}
+                                <input type="number" min="0" name="{{ form.initial_stock.name }}" id="{{ form.initial_stock.id_for_label }}" 
+                                       class="form-control {% if form.initial_stock.errors %}is-invalid{% endif %}" 
+                                       value="{{ form.initial_stock.value|default:'' }}">
+                                {% if form.initial_stock.help_text %}
+                                <small class="form-text text-muted">{{ form.initial_stock.help_text }}</small>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                            
+                            <!-- Minimum Stock -->
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.minimum_stock.id_for_label }}" class="form-label">Minimum Stock</label>
+                                {{ form.minimum_stock.errors }}
+                                <input type="number" min="0" name="{{ form.minimum_stock.name }}" id="{{ form.minimum_stock.id_for_label }}" 
+                                       class="form-control {% if form.minimum_stock.errors %}is-invalid{% endif %}" 
+                                       value="{{ form.minimum_stock.value|default:'' }}">
+                                {% if form.minimum_stock.help_text %}
+                                <small class="form-text text-muted">{{ form.minimum_stock.help_text }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Usage Type -->
+                        <div class="mb-3">
+                            <label for="{{ form.usage_type.id_for_label }}" class="form-label">Usage Type</label>
+                            {{ form.usage_type.errors }}
+                            <select name="{{ form.usage_type.name }}" id="{{ form.usage_type.id_for_label }}" 
+                                   class="form-select {% if form.usage_type.errors %}is-invalid{% endif %}">
+                                {% for choice in form.usage_type.field.choices %}
+                                <option value="{{ choice.0 }}" {% if form.usage_type.value == choice.0 %}selected{% endif %}>
+                                    {{ choice.1 }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            {% if form.usage_type.help_text %}
+                            <small class="form-text text-muted">{{ form.usage_type.help_text }}</small>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Barcode -->
+                        <div class="mb-3">
+                            <label for="{{ form.barcode.id_for_label }}" class="form-label">Barcode (Optional)</label>
+                            {{ form.barcode.errors }}
+                            <input type="text" name="{{ form.barcode.name }}" id="{{ form.barcode.id_for_label }}" 
+                                   class="form-control {% if form.barcode.errors %}is-invalid{% endif %}" 
+                                   value="{{ form.barcode.value|default:'' }}">
+                            {% if form.barcode.help_text %}
+                            <small class="form-text text-muted">{{ form.barcode.help_text }}</small>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Image -->
+                        <div class="mb-3">
+                            <label for="{{ form.image.id_for_label }}" class="form-label">Product Image</label>
+                            {{ form.image.errors }}
+                            
+                            {% if product and product.image %}
+                            <div class="mb-2">
+                                <img src="{{ product.image.url }}" alt="{{ product.name }}" class="img-thumbnail" style="max-height: 100px;">
+                            </div>
+                            {% endif %}
+                            
+                            <input type="file" name="{{ form.image.name }}" id="{{ form.image.id_for_label }}" 
+                                   class="form-control {% if form.image.errors %}is-invalid{% endif %}">
+                            {% if form.image.help_text %}
+                            <small class="form-text text-muted">{{ form.image.help_text }}</small>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Active Status -->
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" name="{{ form.is_active.name }}" id="{{ form.is_active.id_for_label }}" 
+                                   class="form-check-input {% if form.is_active.errors %}is-invalid{% endif %}" 
+                                   {% if form.is_active.value %}checked{% endif %}>
+                            <label for="{{ form.is_active.id_for_label }}" class="form-check-label">Active</label>
+                            {{ form.is_active.errors }}
+                            {% if form.is_active.help_text %}
+                            <small class="form-text text-muted d-block">{{ form.is_active.help_text }}</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> {% if product %}Update{% else %}Save{% endif %} Product
+                    </button>
+                    <a href="{% url 'Stock_Management:product_list' %}" class="btn btn-outline-secondary">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Initialize select2 for dropdowns
+        $('.form-select').select2({
+            theme: 'bootstrap-5'
+        });
+    });
+</script>
+{% endblock extra_js %}

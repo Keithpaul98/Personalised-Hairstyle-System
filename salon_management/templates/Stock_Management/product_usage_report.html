@@ -1,0 +1,344 @@
+{% extends "base.html" %}
+{% load static %}
+{% load stock_filters %}
+
+{% block title %}Product Usage Report{% endblock title %}
+
+{% block extra_css %}
+<style>
+    .chart-container {
+        height: 300px;
+    }
+</style>
+{% endblock extra_css %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Product Usage Report</h2>
+        <div>
+            {% comment %}
+            <a href="{% url 'Stock_Management:export_product_usage_report' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" class="btn btn-outline-primary">
+                <i class="fas fa-file-export"></i> Export Report
+            </a>
+            {% endcomment %}
+            <a href="{% url 'Stock_Management:dashboard' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Total Transactions</h5>
+                    <h2 class="mb-0">{{ total_transactions }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Salon Usage</h5>
+                    <h2 class="mb-0">{{ salon_usage_count }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Retail Sales</h5>
+                    <h2 class="mb-0">{{ retail_sales_count }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Revenue</h5>
+                    <h2 class="mb-0">${{ total_revenue|floatformat:2 }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header bg-light">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h5 class="mb-0">Filter Report</h5>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row">
+                <div class="col-md-3 mb-3">
+                    <label for="category" class="form-label">Category</label>
+                    <select name="category" id="category" class="form-control">
+                        <option value="">All Categories</option>
+                        {% for category in categories %}
+                        <option value="{{ category.id }}" {% if request.GET.category == category.id|stringformat:"i" %}selected{% endif %}>{{ category.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label for="transaction_type" class="form-label">Transaction Type</label>
+                    <select name="transaction_type" id="transaction_type" class="form-control">
+                        <option value="">All Types</option>
+                        <option value="salon_usage" {% if request.GET.transaction_type == 'salon_usage' %}selected{% endif %}>Salon Usage</option>
+                        <option value="sale" {% if request.GET.transaction_type == 'sale' %}selected{% endif %}>Retail Sale</option>
+                    </select>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label for="date_from" class="form-label">Date From</label>
+                    <input type="date" name="date_from" id="date_from" class="form-control" value="{{ request.GET.date_from }}">
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label for="date_to" class="form-label">Date To</label>
+                    <input type="date" name="date_to" id="date_to" class="form-control" value="{{ request.GET.date_to }}">
+                </div>
+                <div class="col-12 text-end">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-filter"></i> Filter
+                    </button>
+                    <a href="{% url 'Stock_Management:product_usage_report' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-undo"></i> Reset
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Usage by Category</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Salon vs Retail Usage</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="usageTypeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-light">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Product Usage Breakdown</h5>
+                <span class="badge bg-primary">{{ products|length }} products</span>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Category</th>
+                            <th>Salon Usage</th>
+                            <th>Retail Sales</th>
+                            <th>Total Usage</th>
+                            <th>Revenue</th>
+                            <th>Current Stock</th>
+                            <th>Usage Trend</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in products %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'Stock_Management:product_detail' product_id=product.id %}">
+                                    {{ product.name }}
+                                </a>
+                                <small class="text-muted d-block">
+                                    {% if product.usage_type == 'salon' %}
+                                    Salon Use Only
+                                    {% elif product.usage_type == 'retail' %}
+                                    Retail Only
+                                    {% else %}
+                                    Both Salon and Retail
+                                    {% endif %}
+                                </small>
+                            </td>
+                            <td>{{ product.category.name }}</td>
+                            <td>{{ product.salon_usage }}</td>
+                            <td>{{ product.retail_sales }}</td>
+                            <td>{{ product.total_usage }}</td>
+                            <td>${{ product.revenue|floatformat:2 }}</td>
+                            <td>{{ product.current_stock }}</td>
+                            <td>
+                                {% if product.trend > 0 %}
+                                <span class="text-success"><i class="fas fa-arrow-up"></i> {{ product.trend }}%</span>
+                                {% elif product.trend < 0 %}
+                                <span class="text-danger"><i class="fas fa-arrow-down"></i> {{ product.trend|abs_value }}%</span>
+                                {% else %}
+                                <span class="text-muted"><i class="fas fa-minus"></i> 0%</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center">No products match the selected filters.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">Category Usage Breakdown</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Products</th>
+                            <th>Salon Usage</th>
+                            <th>Retail Sales</th>
+                            <th>Total Usage</th>
+                            <th>Revenue</th>
+                            <th>% of Total Usage</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for category in category_breakdown %}
+                        <tr>
+                            <td>{{ category.name }}</td>
+                            <td>{{ category.product_count }}</td>
+                            <td>{{ category.salon_usage }}</td>
+                            <td>{{ category.retail_sales }}</td>
+                            <td>{{ category.total_usage }}</td>
+                            <td>${{ category.revenue|floatformat:2 }}</td>
+                            <td>{{ category.percentage|floatformat:1 }}%</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center">No categories found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">Monthly Usage Trends</h5>
+        </div>
+        <div class="card-body">
+            <div class="chart-container" style="height: 400px;">
+                <canvas id="monthlyTrendsChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Category Chart
+        const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+        const categoryData = JSON.parse('{{ category_chart_data_json|escapejs }}');
+        const categoryChart = new Chart(categoryCtx, {
+            type: 'pie',
+            data: {
+                labels: categoryData.labels,
+                datasets: [{
+                    data: categoryData.values,
+                    backgroundColor: [
+                        '#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b',
+                        '#5a5c69', '#858796', '#6f42c1', '#20c9a6', '#f8f9fc'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.label || '';
+                                let value = context.raw || 0;
+                                return label + ': ' + value + ' units';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Monthly Trends Chart
+        const trendsCtx = document.getElementById('monthlyTrendsChart').getContext('2d');
+        const trendsData = JSON.parse('{{ monthly_trends_data_json|escapejs }}');
+        const trendsChart = new Chart(trendsCtx, {
+            type: 'line',
+            data: {
+                labels: trendsData.labels,
+                datasets: [{
+                    label: 'Salon Usage',
+                    data: trendsData.salon,
+                    borderColor: '#4e73df',
+                    backgroundColor: 'rgba(78, 115, 223, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.1
+                }, {
+                    label: 'Retail Sales',
+                    data: trendsData.retail,
+                    borderColor: '#1cc88a',
+                    backgroundColor: 'rgba(28, 200, 138, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Units'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top'
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock extra_js %}

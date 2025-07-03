@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ service.name }} - Details{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="text-center">{{ service.name }}</h1>
+    
+    <div class="card mb-4">
+        <div class="row no-gutters">
+            <div class="col-md-4">
+                {% if service.image %}
+                    <img src="{{ service.image.url }}" class="card-img" alt="{{ service.name }}">
+                {% else %}
+                    <img src="{% static 'images/hairstyle.png' %}" class="card-img" alt="{{ service.name }}">
+                {% endif %}
+            </div>
+            <div class="col-md-8">
+                <div class="card-body">
+                    <h5 class="card-title">{{ service.name }}</h5>
+                    <p class="card-text">{{ service.description }}</p>
+                    <p class="card-text"><strong>Price: MK{{ service.price }}</strong></p>
+                    
+                    {% if service.duration_minutes %}
+                        <p class="card-text"><small class="text-muted">Duration: {{ service.duration_minutes }} minutes</small></p>
+                    {% elif service.duration %}
+                        <p class="card-text"><small class="text-muted">Duration: {{ service.duration }}</small></p>
+                    {% endif %}
+                    
+                    <div class="mt-4">
+                        <a href="{% url 'services:select_hairstyle' service.id %}" class="btn btn-primary">Select for Appointment</a>
+                        <a href="{% url 'services:list_hairstyles' %}" class="btn btn-secondary">Back to Hairstyles</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

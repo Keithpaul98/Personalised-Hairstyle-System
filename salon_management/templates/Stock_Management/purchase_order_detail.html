@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Purchase Order #{{ order.id }}{% endblock title %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Purchase Order #{{ order.id }}</h2>
+        <div>
+            {% if order.status == 'draft' %}
+            <a href="{% url 'Stock_Management:edit_purchase_order' order_id=order.id %}" class="btn btn-primary">
+                <i class="fas fa-edit"></i> Edit Order
+            </a>
+            {% endif %}
+            
+            {% if order.status == 'ordered' or order.status == 'partial' %}
+            <a href="{% url 'Stock_Management:receive_items' order_id=order.id %}" class="btn btn-success">
+                <i class="fas fa-check"></i> Receive Items
+            </a>
+            {% endif %}
+            
+            <a href="{% url 'Stock_Management:purchase_order_list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Orders
+            </a>
+        </div>
+    </div>
+
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+        <div class="alert alert-{% if message.tags == 'success' %}success{% elif message.tags == 'error' %}danger{% else %}info{% endif %} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Order Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h6 class="text-muted">Status</h6>
+                        <p class="mb-0">
+                            {% if order.status == 'draft' %}
+                            <span class="badge bg-secondary">Draft</span>
+                            {% elif order.status == 'ordered' %}
+                            <span class="badge bg-primary">Ordered</span>
+                            {% elif order.status == 'partial' %}
+                            <span class="badge bg-warning">Partially Received</span>
+                            {% elif order.status == 'received' %}
+                            <span class="badge bg-success">Received</span>
+                            {% elif order.status == 'cancelled' %}
+                            <span class="badge bg-danger">Cancelled</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="mb-3">
+                        <h6 class="text-muted">Order Date</h6>
+                        <p class="mb-0">{{ order.order_date|date:"d M Y H:i" }}</p>
+                    </div>
+                    <div class="mb-3">
+                        <h6 class="text-muted">Expected Delivery</h6>
+                        <p class="mb-0">{{ order.expected_delivery_date|date:"d M Y"|default:"Not specified" }}</p>
+                    </div>
+                    <div class="mb-3">
+                        <h6 class="text-muted">Total Amount</h6>
+                        <p class="mb-0">${{ order.total_amount }}</p>
+                    </div>
+                    <div class="mb-3">
+                        <h6 class="text-muted">Created By</h6>
+                        <p class="mb-0">{{ order.created_by.username }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Supplier Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h6 class="text-muted">Name</h6>
+                        <p class="mb-0">
+                            <a href="{% url 'Stock_Management:supplier_detail' supplier_id=order.supplier.id %}">
+                                {{ order.supplier.name }}
+                            </a>
+                        </p>
+                    </div>
+                    <div class="mb-3">
+                        <h6 class="text-muted">Contact Person</h6>
+                        <p class="mb-0">{{ order.supplier.contact_person|default:"Not specified" }}</p>
+                    </div>
+                    <div class="mb-3">
+                        <h6 class="text-muted">Email</h6>
+                        <p class="mb-0">
+                            {% if order.supplier.email %}
+                            <a href="mailto:{{ order.supplier.email }}">{{ order.supplier.email }}</a>
+                            {% else %}
+                            Not specified
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="mb-3">
+                        <h6 class="text-muted">Phone</h6>
+                        <p class="mb-0">
+                            {% if order.supplier.phone %}
+                            <a href="tel:{{ order.supplier.phone }}">{{ order.supplier.phone }}</a>
+                            {% else %}
+                            Not specified
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            {% if order.notes %}
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Notes</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-0">{{ order.notes|linebreaks }}</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Order Items</h5>
+                        <span class="badge bg-primary">{{ order.items.count }} items</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Ordered</th>
+                                    <th>Received</th>
+                                    <th>Unit Price</th>
+                                    <th>Total</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in order.items.all %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'Stock_Management:product_detail' product_id=item.product.id %}">
+                                            {{ item.product.name }}
+                                        </a>
+                                        <small class="text-muted d-block">{{ item.product.category.name }}</small>
+                                    </td>
+                                    <td>{{ item.quantity_ordered }}</td>
+                                    <td>{{ item.quantity_received }}</td>
+                                    <td>${{ item.unit_price }}</td>
+                                    <td>${{ item.total_price }}</td>
+                                    <td>
+                                        {% if item.quantity_received == 0 %}
+                                        <span class="badge bg-secondary">Pending</span>
+                                        {% elif item.quantity_received < item.quantity_ordered %}
+                                        <span class="badge bg-warning">Partial</span>
+                                        {% else %}
+                                        <span class="badge bg-success">Received</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center">No items in this order.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr class="table-light">
+                                    <th colspan="4" class="text-end">Total:</th>
+                                    <th>${{ order.total_amount }}</th>
+                                    <th></th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            {% if receipt_history %}
+            <div class="card mt-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Receipt History</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Product</th>
+                                    <th>Quantity</th>
+                                    <th>Received By</th>
+                                    <th>Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for receipt in receipt_history %}
+                                <tr>
+                                    <td>{{ receipt.date|date:"d M Y H:i" }}</td>
+                                    <td>{{ receipt.product.name }}</td>
+                                    <td>{{ receipt.quantity }}</td>
+                                    <td>{{ receipt.received_by.username }}</td>
+                                    <td>{{ receipt.notes|default:"-" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock content %}

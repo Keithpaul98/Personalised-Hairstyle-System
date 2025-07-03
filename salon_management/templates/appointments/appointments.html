@@ -1,0 +1,283 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Book Appointment{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0"><i class="fas fa-calendar-plus mr-2"></i>Book Appointment</h3>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="appointmentForm">
+                        {% csrf_token %}
+                        
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            {{ form.non_field_errors }}
+                            <button type="button" class="close" data-dismiss="alert">
+                                <span>&times;</span>
+                            </button>
+                        </div>
+                        {% endif %}
+                        
+                        {% if not service %}
+                        <div class="form-group">
+                            <label for="service"><i class="fas fa-cut mr-2"></i>Select Service:</label>
+                            <select name="service" id="service" class="form-control select2">
+                                <option value="">Choose a service...</option>
+                                {% for category in service_categories %}
+                                    <optgroup label="{{ category.name }}">
+                                        {% for service in services %}
+                                            {% if service.category == category %}
+                                                <option value="{{ service.id }}" {% if selected_service == service.id %}selected{% endif %}>
+                                                    {{ service.name }} - MK{{ service.price }}
+                                                </option>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </optgroup>
+                                {% endfor %}
+                            </select>
+                            {{ form.service.errors }}
+                        </div>
+                        {% endif %}
+
+                        <div class="form-group">
+                            <label for="id_date"><i class="far fa-calendar mr-2"></i>Select Date:</label>
+                            <input type="date" name="date" id="id_date" class="form-control datepicker" 
+                                   min="{{ today|date:'Y-m-d' }}" required>
+                            {% if form.date.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.date.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-group">
+                            <label for="id_time"><i class="far fa-clock mr-2"></i>Select Time:</label>
+                            <select name="time" id="id_time" class="form-control select2" required>
+                                <option value="">Choose a time...</option>
+                                <!-- Morning hours -->
+                                <optgroup label="Morning">
+                                    <option value="8:00">8:00 AM</option>
+                                    <option value="8:30">8:30 AM</option>
+                                    <option value="9:00">9:00 AM</option>
+                                    <option value="9:30">9:30 AM</option>
+                                    <option value="10:00">10:00 AM</option>
+                                    <option value="10:30">10:30 AM</option>
+                                    <option value="11:00">11:00 AM</option>
+                                    <option value="11:30">11:30 AM</option>
+                                </optgroup>
+                                <!-- Afternoon hours -->
+                                <optgroup label="Afternoon">
+                                    <option value="12:00">12:00 PM</option>
+                                    <option value="12:30">12:30 PM</option>
+                                    <option value="13:00">1:00 PM</option>
+                                    <option value="13:30">1:30 PM</option>
+                                    <option value="14:00">2:00 PM</option>
+                                    <option value="14:30">2:30 PM</option>
+                                    <option value="15:00">3:00 PM</option>
+                                    <option value="15:30">3:30 PM</option>
+                                    <option value="16:00">4:00 PM</option>
+                                    <option value="16:30">4:30 PM</option>
+                                    <option value="17:00">5:00 PM</option>
+                                    <option value="17:30">5:30 PM</option>
+                                    <option value="18:00">6:00 PM</option>
+                                </optgroup>
+                            </select>
+                            {% if form.time.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.time.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-block">
+                            <i class="fas fa-calendar-check mr-2"></i>Book Appointment
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Suggested Time Alert -->
+            <div id="suggested-time" class="alert alert-info alert-dismissible fade show mt-3" style="display:none;">
+                <i class="fas fa-info-circle mr-2"></i>
+                <span id="suggested-time-message"></span>
+                <button type="button" class="close" data-dismiss="alert">
+                    <span>&times;</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Current Appointments Section -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0"><i class="fas fa-calendar-alt mr-2"></i>Your Upcoming Appointments</h3>
+                </div>
+                <div class="card-body">
+                    {% if appointments %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Service</th>
+                                        <th>Stylist</th>
+                                        <th>Date</th>
+                                        <th>Time</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for appointment in appointments %}
+                                        {% if appointment.status != 'Cancelled' %}
+                                            <tr>
+                                                <td>{{ appointment.service.name }}</td>
+                                                <td>{{ appointment.stylist.name }}</td>
+                                                <td>{{ appointment.date|date:"D, M d, Y" }}</td>
+                                                <td>{{ appointment.time|time:"g:i A" }}</td>
+                                                <td>
+                                                    <span class="badge badge-{{ appointment.status|lower }}-pill">
+                                                        {{ appointment.status }}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <a href="{% url 'appointments:appointment_details' appointment.id %}" 
+                                                       class="btn btn-sm btn-info">
+                                                        <i class="fas fa-eye mr-1"></i>Details
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        {% endif %}
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                            <p class="lead">No upcoming appointments</p>
+                            <p class="text-muted">Book your first appointment above!</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+    .badge-pending {
+        background-color: var(--warning);
+        color: #fff;
+    }
+    .badge-confirmed {
+        background-color: var(--success);
+        color: #fff;
+    }
+    .badge-cancelled {
+        background-color: var(--danger);
+        color: #fff;
+    }
+    .select2-container .select2-selection--single {
+        height: 38px;
+        border: 1px solid #ced4da;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        line-height: 38px;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 36px;
+    }
+    .select2-container--bootstrap4 .select2-results__group {
+        color: var(--primary-color);
+        font-weight: bold;
+        padding: 6px 12px;
+        background-color: rgba(0,0,0,0.05);
+    }
+
+    .select2-container--bootstrap4 .select2-results__option {
+        padding: 6px 24px;
+    }
+
+    .select2-container--bootstrap4 .select2-results__option--group {
+        padding: 0;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+$(document).ready(function() {
+    // Initialize Select2
+    $('.select2').select2({
+        theme: 'bootstrap4',
+        width: '100%'
+    });
+
+    // Form submission handling
+    $('#appointmentForm').on('submit', function(event) {
+        event.preventDefault();
+        const form = $(this);
+
+        $.ajax({
+            url: form.attr('action'),
+            method: form.attr('method'),
+            data: form.serialize(),
+            success: function(response) {
+                if (response.redirect_url) {
+                    window.location.href = response.redirect_url;
+                }
+            },
+            error: function(xhr) {
+                const data = xhr.responseJSON;
+                if (data.error) {
+                    const suggestedTime = $('#suggested-time');
+                    $('#suggested-time-message').html(
+                        `The selected time slot is not available. Next available time: <strong>${data.suggested_time}</strong>`
+                    );
+                    suggestedTime.fadeIn();
+                }
+            }
+        });
+    });
+
+    // Minimum date for datepicker
+    const today = new Date();
+    const dd = String(today.getDate()).padStart(2, '0');
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const yyyy = today.getFullYear();
+    $('#id_date').attr('min', yyyy + '-' + mm + '-' + dd);
+
+    // Initialize Select2 with category support
+    $('#service').select2({
+        theme: 'bootstrap4',
+        width: '100%',
+        placeholder: 'Choose a service...',
+        allowClear: true
+    });
+
+    // Update price when service is selected
+    $('#service').on('change', function() {
+        var selectedOption = $(this).find('option:selected');
+        if (selectedOption.val()) {
+            var price = selectedOption.text().split(' - ')[1];
+            $('#service-price').text(price);
+        } else {
+            $('#service-price').text('');
+        }
+    });
+});
+</script>
+{% endblock %}

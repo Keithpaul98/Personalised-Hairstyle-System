@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Appointment Receipt</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .receipt-details {
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+        }
+        .total {
+            text-align: right;
+            font-weight: bold;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Impact Looks</h1>
+        <p>Chichiri Shopping Mall<br>
+           Chichiri, Blantyre<br>
+           Tel: 0881867522</p>
+    </div>
+
+    <div class="receipt-details">
+        <p><strong>Receipt #:</strong> {{ receipt.receipt_number }}</p>
+        <p><strong>Date:</strong> {{ receipt.created_at|date:"F d, Y" }}</p>
+        <p><strong>Customer:</strong> {% if receipt.customer.get_full_name %}{{ receipt.customer.get_full_name }}{% else %}{{ receipt.customer.username }}{% endif %}</p>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Service</th>
+                <th>Stylist</th>
+                <th>Appointment Date & Time</th>
+                <th>Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>{{ receipt.appointment.service.name }}</td>
+                <td>{{ receipt.appointment.stylist.get_full_name }}</td>
+                <td>{{ receipt.appointment.date|date:"M d, Y" }} at {{ receipt.appointment.time|time:"g:i A" }}</td>
+                <td>${{ receipt.total_amount }}</td>
+            </tr>
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="3" class="total">Total:</td>
+                <td>${{ receipt.total_amount }}</td>
+            </tr>
+        </tfoot>
+    </table>
+
+    <div class="footer">
+        <p>Thank you for choosing Impact Looks Salon!</p>
+        <p>This is your official receipt. Please keep it for your records.</p>
+    </div>
+</body>
+</html>

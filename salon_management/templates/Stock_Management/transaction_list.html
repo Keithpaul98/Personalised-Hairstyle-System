@@ -1,0 +1,213 @@
+
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Stock Transactions{% endblock title %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Stock Transactions</h2>
+        <a href="{% url 'Stock_Management:add_transaction' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Add New Transaction
+        </a>
+    </div>
+
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+        <div class="alert alert-{% if message.tags == 'success' %}success{% elif message.tags == 'error' %}danger{% else %}info{% endif %} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="card mb-4">
+        <div class="card-header bg-light">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h5 class="mb-0">Filter Transactions</h5>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row">
+                <div class="col-md-3 mb-3">
+                    <label for="product" class="form-label">Product</label>
+                    <select name="product" id="product" class="form-control">
+                        <option value="">All Products</option>
+                        {% for product in products %}
+                        <option value="{{ product.id }}" {% if request.GET.product == product.id|stringformat:"i" %}selected{% endif %}>{{ product.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label for="transaction_type" class="form-label">Transaction Type</label>
+                    <select name="transaction_type" id="transaction_type" class="form-control">
+                        <option value="">All Types</option>
+                        <option value="purchase" {% if request.GET.transaction_type == 'purchase' %}selected{% endif %}>Purchase</option>
+                        <option value="sale" {% if request.GET.transaction_type == 'sale' %}selected{% endif %}>Sale</option>
+                        <option value="return" {% if request.GET.transaction_type == 'return' %}selected{% endif %}>Return</option>
+                        <option value="adjustment" {% if request.GET.transaction_type == 'adjustment' %}selected{% endif %}>Adjustment</option>
+                        <option value="salon_usage" {% if request.GET.transaction_type == 'salon_usage' %}selected{% endif %}>Salon Usage</option>
+                    </select>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label for="date_from" class="form-label">Date From</label>
+                    <input type="date" name="date_from" id="date_from" class="form-control" value="{{ request.GET.date_from }}">
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label for="date_to" class="form-label">Date To</label>
+                    <input type="date" name="date_to" id="date_to" class="form-control" value="{{ request.GET.date_to }}">
+                </div>
+                <div class="col-12 text-end">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-filter"></i> Filter
+                    </button>
+                    <a href="{% url 'Stock_Management:transaction_list' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-undo"></i> Reset
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-light">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h5 class="mb-0">Transactions</h5>
+                </div>
+                <div class="col-auto">
+                    <span class="badge bg-primary">{{ transactions.count }} transactions</span>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Reference #</th>
+                            <th>Date</th>
+                            <th>Product</th>
+                            <th>Type</th>
+                            <th>Quantity</th>
+                            <th>Unit Price</th>
+                            <th>Total</th>
+                            <th>Created By</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for transaction in transactions %}
+                        <tr>
+                            <td>
+                                <span class="badge bg-light text-dark">{{ transaction.reference_number }}</span>
+                            </td>
+                            <td>{{ transaction.transaction_date|date:"d M Y H:i" }}</td>
+                            <td>
+                                <a href="{% url 'Stock_Management:product_detail' product_id=transaction.product.id %}">
+                                    {{ transaction.product.name }}
+                                </a>
+                            </td>
+                            <td>
+                                {% if transaction.transaction_type == 'purchase' %}
+                                <span class="badge bg-success">Purchase</span>
+                                {% elif transaction.transaction_type == 'sale' %}
+                                <span class="badge bg-info">Sale</span>
+                                {% elif transaction.transaction_type == 'return' %}
+                                <span class="badge bg-warning">Return</span>
+                                {% elif transaction.transaction_type == 'adjustment' %}
+                                <span class="badge bg-secondary">Adjustment</span>
+                                {% elif transaction.transaction_type == 'salon_usage' %}
+                                <span class="badge bg-primary">Salon Usage</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if transaction.transaction_type in 'purchase,return' %}
+                                <span class="text-success">+{{ transaction.quantity }}</span>
+                                {% elif transaction.transaction_type in 'sale,salon_usage' %}
+                                <span class="text-danger">-{{ transaction.quantity }}</span>
+                                {% else %}
+                                <span>{{ transaction.quantity }}</span>
+                                {% endif %}
+                            </td>
+                            <td>${{ transaction.unit_price }}</td>
+                            <td>${{ transaction.total_amount }}</td>
+                            <td>{{ transaction.created_by.username }}</td>
+                            <td>
+                                <div class="btn-group">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" data-toggle="modal" data-target="#transactionModal{{ transaction.id }}">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="9" class="text-center">No transactions found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Transaction Detail Modals -->
+{% for transaction in transactions %}
+<div class="modal fade" id="transactionModal{{ transaction.id }}" tabindex="-1" aria-labelledby="transactionModalLabel{{ transaction.id }}" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="transactionModalLabel{{ transaction.id }}">Transaction Details</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Reference Number:</strong> {{ transaction.reference_number }}</p>
+                        <p><strong>Transaction Date:</strong> {{ transaction.transaction_date|date:"d M Y H:i" }}</p>
+                        <p><strong>Transaction Type:</strong> 
+                            {% if transaction.transaction_type == 'purchase' %}Purchase
+                            {% elif transaction.transaction_type == 'sale' %}Sale
+                            {% elif transaction.transaction_type == 'return' %}Return
+                            {% elif transaction.transaction_type == 'adjustment' %}Adjustment
+                            {% elif transaction.transaction_type == 'salon_usage' %}Salon Usage
+                            {% endif %}
+                        </p>
+                        <p><strong>Created By:</strong> {{ transaction.created_by.username }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Product:</strong> {{ transaction.product.name }}</p>
+                        <p><strong>Quantity:</strong> {{ transaction.quantity }}</p>
+                        <p><strong>Unit Price:</strong> ${{ transaction.unit_price }}</p>
+                        <p><strong>Total Amount:</strong> ${{ transaction.total_amount }}</p>
+                    </div>
+                </div>
+                {% if transaction.notes %}
+                <hr>
+                <div class="row">
+                    <div class="col-12">
+                        <p><strong>Notes:</strong></p>
+                        <p>{{ transaction.notes }}</p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endblock content %}

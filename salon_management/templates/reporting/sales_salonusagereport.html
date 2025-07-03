@@ -1,0 +1,413 @@
+{% extends "base.html" %}
+{% load static %}
+{% load report_filters %}
+
+{% block title %}Sales vs. Salon Usage Report{% endblock title %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-balance-scale text-warning me-2"></i> Sales vs. Salon Usage Report</h2>
+        <a href="{% url 'reporting:dashboard' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0"><i class="fas fa-filter me-2"></i> Filter Options</h5>
+        </div>
+        <div class="card-body">
+            <form method="get" id="filter-form">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-3">
+                        <label for="start_date" class="form-label">Start Date</label>
+                        <input type="date" class="form-control" id="start_date" name="start_date" value="{{ start_date|date:'Y-m-d' }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="end_date" class="form-label">End Date</label>
+                        <input type="date" class="form-control" id="end_date" name="end_date" value="{{ end_date|date:'Y-m-d' }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="category" class="form-label">Product Category</label>
+                        <select class="form-select" id="category" name="category">
+                            <option value="">All Categories</option>
+                            {% for cat in categories %}
+                                <option value="{{ cat.id }}" {% if selected_category.id == cat.id %}selected{% endif %}>{{ cat.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="product" class="form-label">Product</label>
+                        <select class="form-select" id="product" name="product" {% if not products %}disabled{% endif %}>
+                            <option value="">All Products</option>
+                            {% for prod in products %}
+                                <option value="{{ prod.id }}" {% if selected_product.id == prod.id %}selected{% endif %}>{{ prod.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-12 text-end">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search me-2"></i> Apply Filters
+                        </button>
+                        <a href="{% url 'reporting:sales_vs_salon_report' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-redo me-2"></i> Reset
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card h-100 border-left-primary">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Retail Units Sold
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ retail_sales.total_quantity }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-shopping-cart fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card h-100 border-left-success">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Salon Units Used
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ salon_usage.total_quantity }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-cut fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card h-100 border-left-info">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Retail Sales Value
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">MWK {{ retail_sales.total_value|floatformat:2 }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card h-100 border-left-warning">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Salon Usage Value
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">MWK {{ salon_usage.total_value|floatformat:2 }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-scissors fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Usage Ratio Analysis -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-percentage me-2 text-info"></i> Usage Ratio</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <!-- SVG chart for usage ratio -->
+                        <svg width="100%" height="300" viewBox="0 0 400 300" style="background-color: white;">
+                            <!-- Title -->
+                            <text x="200" y="30" text-anchor="middle" font-size="16" font-weight="bold">Retail vs. Salon Usage Ratio</text>
+                            
+                            <!-- Pie chart -->
+                            {% if retail_percentage > 0 or salon_percentage > 0 %}
+                            {% with sales_angle=retail_percentage|mul:3.6 salon_angle=salon_percentage|mul:3.6 %}
+                                    <!-- Salon Usage slice -->
+                                    <path d="M 200 150 L 200 50 A 100 100 0 {{ salon_angle|div:360|mul:1|add:0|floatformat:0 }} 1 {{ 200|add:100|mul:salon_angle|div:360|sub:100|floatformat:0 }} {{ 150|sub:100|mul:salon_angle|div:360|add:100|floatformat:0 }} Z" fill="#1cc88a" />
+                                    
+                                    <!-- Retail Sales slice -->
+                                    <path d="M 200 150 L {{ 200|add:100|mul:salon_angle|div:360|sub:100|floatformat:0 }} {{ 150|sub:100|mul:salon_angle|div:360|add:100|floatformat:0 }} A 100 100 0 {{ sales_angle|div:360|mul:1|add:0|floatformat:0 }} 1 200 50 Z" fill="#4e73df" />
+                                    
+                                    <!-- Labels -->
+                                    <text x="200" y="220" text-anchor="middle" font-size="14" font-weight="bold">
+                                        Retail: {{ retail_percentage|floatformat:1 }}% ({{ retail_sales.total_quantity }} units)
+                                    </text>
+                                    <text x="200" y="245" text-anchor="middle" font-size="14" font-weight="bold">
+                                        Salon: {{ salon_percentage|floatformat:1 }}% ({{ salon_usage.total_quantity }} units)
+                                    </text>
+                                {% endwith %}
+                            {% else %}
+                                <text x="200" y="150" text-anchor="middle" font-size="14">No data available</text>
+                            {% endif %}
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-chart-line me-2 text-success"></i> Monthly Comparison</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <!-- SVG chart for monthly comparison -->
+                        <svg width="100%" height="300" viewBox="0 0 600 300" style="background-color: white;">
+                            <!-- Title -->
+                            <text x="300" y="30" text-anchor="middle" font-size="16" font-weight="bold">Monthly Product Usage</text>
+                            
+                            <!-- X-axis -->
+                            <line x1="50" y1="250" x2="550" y2="250" stroke="#ccc" stroke-width="1" />
+                            <!-- Y-axis -->
+                            <line x1="50" y1="250" x2="50" y2="50" stroke="#ccc" stroke-width="1" />
+                            
+                            <!-- X-axis labels (months) -->
+                            {% for item in monthly_comparison %}
+                                <text 
+                                    x="{{ forloop.counter0|mul:65|add:85 }}" 
+                                    y="270" 
+                                    text-anchor="middle" 
+                                    font-size="12" 
+                                    fill="#333333">
+                                    {{ item.month }}
+                                </text>
+                            {% endfor %}
+                            
+                            <!-- Bars for retail sales -->
+                            {% for item in monthly_comparison %}
+                                <rect 
+                                    x="{{ forloop.counter0|mul:65|add:70 }}" 
+                                    y="{{ 250|sub:item.retail|mul:0.8 }}" 
+                                    width="25" 
+                                    height="{{ item.retail|mul:0.8 }}" 
+                                    fill="#4e73df" 
+                                    rx="3" 
+                                    ry="3" />
+                            {% endfor %}
+                            
+                            <!-- Bars for salon usage -->
+                            {% for item in monthly_comparison %}
+                                <rect 
+                                    x="{{ forloop.counter0|mul:65|add:100 }}" 
+                                    y="{{ 250|sub:item.salon|mul:0.8 }}" 
+                                    width="25" 
+                                    height="{{ item.salon|mul:0.8 }}" 
+                                    fill="#1cc88a" 
+                                    rx="3" 
+                                    ry="3" />
+                            {% endfor %}
+                            
+                            <!-- Legend -->
+                            <rect x="400" y="30" width="15" height="15" fill="#4e73df" rx="2" ry="2" />
+                            <text x="420" y="43" font-size="12" fill="#333333">Retail Sales</text>
+                            <rect x="500" y="30" width="15" height="15" fill="#1cc88a" rx="2" ry="2" />
+                            <text x="520" y="43" font-size="12" fill="#333333">Salon Usage</text>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Top Products Comparison -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-shopping-cart me-2 text-primary"></i> Top Retail Products</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th class="text-center">Quantity</th>
+                                    <th class="text-end">Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for product in top_retail_products %}
+                                <tr>
+                                    <td>{{ product.product__name }}</td>
+                                    <td class="text-center">{{ product.total_quantity }}</td>
+                                    <td class="text-end">MWK {{ product.total_value|floatformat:2 }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center">No retail sales data available</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-cut me-2 text-success"></i> Top Salon Products</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th class="text-center">Quantity</th>
+                                    <th class="text-end">Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for product in top_salon_products %}
+                                <tr>
+                                    <td>{{ product.product__name }}</td>
+                                    <td class="text-center">{{ product.total_quantity }}</td>
+                                    <td class="text-end">MWK {{ product.total_value|floatformat:2 }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center">No salon usage data available</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Insights and Recommendations -->
+    <div class="card mb-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0"><i class="fas fa-lightbulb me-2 text-warning"></i> Insights & Recommendations</h5>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-info">
+                <h6 class="alert-heading"><i class="fas fa-info-circle me-2"></i> Usage Analysis</h6>
+                <p>
+                    {% if retail_percentage > salon_percentage %}
+                        Your salon is selling more products to customers ({{ retail_percentage|floatformat:1 }}%) than using them in-house ({{ salon_percentage|floatformat:1 }}%).
+                        This suggests strong retail performance.
+                    {% elif salon_percentage > retail_percentage %}
+                        Your salon is using more products in-house ({{ salon_percentage|floatformat:1 }}%) than selling to customers ({{ retail_percentage|floatformat:1 }}%).
+                        Consider promoting retail sales to improve product revenue.
+                    {% else %}
+                        Your salon has an equal balance between retail sales and in-house usage.
+                    {% endif %}
+                </p>
+            </div>
+            
+            <div class="alert alert-warning">
+                <h6 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i> Inventory Recommendations</h6>
+                <p>
+                    Based on your usage patterns, consider:
+                </p>
+                <ul>
+                    <li>Maintaining higher stock levels for top products used in both retail and salon operations</li>
+                    <li>Reviewing pricing strategy for products with high salon usage but low retail sales</li>
+                    <li>Promoting retail sales for products frequently used in salon services</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Handle category change to load products
+        const categorySelect = document.getElementById('category');
+        const productSelect = document.getElementById('product');
+        
+        categorySelect.addEventListener('change', function() {
+            const categoryId = this.value;
+            
+            // Clear product dropdown
+            productSelect.innerHTML = '<option value="">All Products</option>';
+            
+            if (categoryId) {
+                // Enable product dropdown
+                productSelect.disabled = false;
+                
+                // Fetch products for selected category via AJAX
+                fetch(`/stock/api/products-by-category/${categoryId}/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        data.forEach(product => {
+                            const option = document.createElement('option');
+                            option.value = product.id;
+                            option.textContent = product.name;
+                            productSelect.appendChild(option);
+                        });
+                    })
+                    .catch(error => console.error('Error fetching products:', error));
+            } else {
+                // Disable product dropdown if no category selected
+                productSelect.disabled = true;
+            }
+        });
+        
+        // Date range preset buttons
+        document.getElementById('last30Days').addEventListener('click', function(e) {
+            e.preventDefault();
+            const today = new Date();
+            const thirtyDaysAgo = new Date(today);
+            thirtyDaysAgo.setDate(today.getDate() - 30);
+            
+            document.getElementById('start_date').value = formatDate(thirtyDaysAgo);
+            document.getElementById('end_date').value = formatDate(today);
+            document.getElementById('filter-form').submit();
+        });
+        
+        document.getElementById('lastQuarter').addEventListener('click', function(e) {
+            e.preventDefault();
+            const today = new Date();
+            const threeMonthsAgo = new Date(today);
+            threeMonthsAgo.setMonth(today.getMonth() - 3);
+            
+            document.getElementById('start_date').value = formatDate(threeMonthsAgo);
+            document.getElementById('end_date').value = formatDate(today);
+            document.getElementById('filter-form').submit();
+        });
+        
+        // Format date as YYYY-MM-DD
+        function formatDate(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+    });
+</script>
+{% endblock extra_js %}

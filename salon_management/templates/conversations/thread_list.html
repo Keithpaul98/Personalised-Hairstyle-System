@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+<a href="{% url 'conversations:start_conversation' %}" class="btn btn-success mb-3">Start a Conversation</a>
+<div class="thread-list-header">
+  <i class="fa fa-comments"></i> Customer Conversations
+</div>
+<div class="thread-list-container">
+  {% for thread in thread_list %}
+    <div class="thread-card {% if thread.unread_count %}thread-card-unread{% endif %}">
+      <div class="thread-card-header">
+        <span class="thread-title">{{ thread.subject|default:"No Subject" }}</span>
+        {% if thread.unread_count %}
+          <span class="badge badge-danger">New Message</span>
+        {% endif %}
+        <span class="thread-updated">Updated: {{ thread.updated_at|date:"M d, Y H:i" }}</span>
+      </div>
+      <div class="thread-card-body">
+        <span class="thread-avatar">
+          <img src="[https://ui-avatars.com/api/?name={{ thread.customer.get_full_name|default:thread.customer.username|urlencode }}&background=8e5fff&color=fff" alt="{{ thread.customer.get_full_name|default:thread.customer.username }}">
+        </span>
+        <div class="thread-info">
+          <strong>From:</strong> {{ thread.customer.get_full_name|default:thread.customer.username }}<br>
+          <span class="thread-preview">
+            <strong>Latest:</strong> {{ thread.latest_message.content|truncatechars:60 }}
+          </span>
+        </div>
+      </div>
+      <div class="thread-card-actions">
+        <a href="{% url 'conversations:thread_detail' pk=thread.pk %}" class="btn btn-success btn-sm">View Conversation</a>
+        <a href="{% url 'conversations:thread_delete' pk=thread.pk %}" class="btn btn-danger btn-sm">Delete</a>
+      </div>
+    </div>
+  {% empty %}
+    <div class="thread-card-empty">No conversations yet.</div>
+  {% endfor %}
+</div>
+{% endblock %}

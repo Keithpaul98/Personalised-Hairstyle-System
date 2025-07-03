@@ -1,0 +1,347 @@
+{% extends "base.html" %}
+{% load static %}
+{% load stock_filters %}
+
+{% block title %}Stock Forecast{% endblock title %}
+
+{% block extra_css %}
+<style>
+    .chart-container {
+        height: 300px;
+    }
+    .forecast-card {
+        transition: transform 0.3s;
+    }
+    .forecast-card:hover {
+        transform: translateY(-5px);
+    }
+</style>
+{% endblock extra_css %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Stock Forecast</h2>
+        <div>
+            {% comment %}
+            <a href="{% url 'Stock_Management:export_stock_forecast' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" class="btn btn-outline-primary">
+                <i class="fas fa-file-export"></i> Export Forecast
+            </a>
+            {% endcomment %}
+            <a href="{% url 'Stock_Management:dashboard' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Products to Reorder</h5>
+                    <h2 class="mb-0">{{ products_to_reorder }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-warning text-dark">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Estimated Order Value</h5>
+                    <h2 class="mb-0">${{ estimated_order_value|floatformat:2 }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Forecast Period</h5>
+                    <h2 class="mb-0">{{ forecast_period }} days</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header bg-light">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h5 class="mb-0">Forecast Settings</h5>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row">
+                <div class="col-md-4 mb-3">
+                    <label for="category" class="form-label">Category</label>
+                    <select name="category" id="category" class="form-control">
+                        <option value="">All Categories</option>
+                        {% for category in categories %}
+                        <option value="{{ category.id }}" {% if request.GET.category == category.id|stringformat:"i" %}selected{% endif %}>{{ category.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label for="forecast_period" class="form-label">Forecast Period (days)</label>
+                    <select name="forecast_period" id="forecast_period" class="form-control">
+                        <option value="30" {% if request.GET.forecast_period == '30' %}selected{% endif %}>30 Days</option>
+                        <option value="60" {% if request.GET.forecast_period == '60' %}selected{% endif %}>60 Days</option>
+                        <option value="90" {% if request.GET.forecast_period == '90' %}selected{% endif %}>90 Days</option>
+                        <option value="180" {% if request.GET.forecast_period == '180' %}selected{% endif %}>180 Days</option>
+                    </select>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label for="usage_type" class="form-label">Usage Type</label>
+                    <select name="usage_type" id="usage_type" class="form-control">
+                        <option value="">All Types</option>
+                        <option value="salon" {% if request.GET.usage_type == 'salon' %}selected{% endif %}>Salon Use Only</option>
+                        <option value="retail" {% if request.GET.usage_type == 'retail' %}selected{% endif %}>Retail Only</option>
+                        <option value="both" {% if request.GET.usage_type == 'both' %}selected{% endif %}>Both</option>
+                    </select>
+                </div>
+                <div class="col-12 text-end">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-calculator"></i> Generate Forecast
+                    </button>
+                    <a href="{% url 'Stock_Management:stock_forecast' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-undo"></i> Reset
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Forecast by Category</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="categoryForecastChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Usage Trend Projection</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="trendProjectionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-light">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Product Forecast</h5>
+                <span class="badge bg-primary">{{ products|length }} products</span>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Category</th>
+                            <th>Current Stock</th>
+                            <th>Avg. Daily Usage</th>
+                            <th>Projected Usage</th>
+                            <th>Days Until Reorder</th>
+                            <th>Suggested Order Qty</th>
+                            <th>Order Value</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in products %}
+                        <tr class="{% if product.days_until_reorder <= 7 %}table-danger{% elif product.days_until_reorder <= 14 %}table-warning{% endif %}">
+                            <td>
+                                <a href="{% url 'Stock_Management:product_detail' product_id=product.id %}">
+                                    {{ product.name }}
+                                </a>
+                                <small class="text-muted d-block">
+                                    {% if product.usage_type == 'salon' %}
+                                    Salon Use Only
+                                    {% elif product.usage_type == 'retail' %}
+                                    Retail Only
+                                    {% else %}
+                                    Both Salon and Retail
+                                    {% endif %}
+                                </small>
+                            </td>
+                            <td>{{ product.category.name }}</td>
+                            <td>{{ product.current_stock }}</td>
+                            <td>{{ product.avg_daily_usage|floatformat:2 }}</td>
+                            <td>{{ product.projected_usage|floatformat:0 }}</td>
+                            <td>
+                                {% if product.days_until_reorder < 0 %}
+                                <span class="text-danger">Overdue</span>
+                                {% else %}
+                                {{ product.days_until_reorder }} days
+                                {% endif %}
+                            </td>
+                            <td>{{ product.suggested_order_qty }}</td>
+                            <td>${{ product.order_value|floatformat:2 }}</td>
+                            <td>
+                                {% if product.days_until_reorder <= 14 %}
+                                <a href="{% url 'Stock_Management:create_purchase_order' %}?product={{ product.id }}" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-shopping-cart"></i> Order
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="9" class="text-center">No products match the selected filters.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">Recommended Purchase Orders</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                {% for supplier in suppliers_to_order %}
+                <div class="col-md-4 mb-4">
+                    <div class="card forecast-card">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">{{ supplier.name }}</h6>
+                        </div>
+                        <div class="card-body">
+                            <p><strong>Products to Order:</strong> {{ supplier.product_count }}</p>
+                            <p><strong>Total Order Value:</strong> ${{ supplier.order_value|floatformat:2 }}</p>
+                            <p><strong>Last Order:</strong> {{ supplier.last_order_date|default:"None" }}</p>
+                            <div class="d-grid">
+                                <a href="{% url 'Stock_Management:create_purchase_order' %}?supplier={{ supplier.id }}" class="btn btn-primary">
+                                    <i class="fas fa-file-invoice"></i> Create Purchase Order
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-12">
+                    <p class="text-center">No supplier orders recommended at this time.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Category Forecast Chart
+        const categoryCtx = document.getElementById('categoryForecastChart').getContext('2d');
+        const categoryData = JSON.parse('{{ category_forecast_data_json|escapejs }}');
+        const categoryChart = new Chart(categoryCtx, {
+            type: 'bar',
+            data: {
+                labels: categoryData.labels,
+                datasets: [{
+                    label: 'Projected Usage',
+                    data: categoryData.projected_usage,
+                    backgroundColor: '#4e73df'
+                }, {
+                    label: 'Current Stock',
+                    data: categoryData.current_stock,
+                    backgroundColor: '#1cc88a'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Units'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Category'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top'
+                    }
+                }
+            }
+        });
+        
+        // Trend Projection Chart
+        const trendCtx = document.getElementById('trendProjectionChart').getContext('2d');
+        const trendData = JSON.parse('{{ trend_projection_data_json|escapejs }}');
+        const trendChart = new Chart(trendCtx, {
+            type: 'line',
+            data: {
+                labels: trendData.labels,
+                datasets: [{
+                    label: 'Historical Usage',
+                    data: trendData.historical,
+                    borderColor: '#4e73df',
+                    backgroundColor: 'rgba(78, 115, 223, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.1
+                }, {
+                    label: 'Projected Usage',
+                    data: trendData.projected,
+                    borderColor: '#f6c23e',
+                    backgroundColor: 'rgba(246, 194, 62, 0.1)',
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    fill: true,
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Units'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Month'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top'
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock extra_js %}

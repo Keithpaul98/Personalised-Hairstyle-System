@@ -1,0 +1,37 @@
+<div id="chat-widget">
+    <div class="chat-header">
+        <!--
+      <div class="chat-brand-avatar">
+         Replace with your logo/avatar if available 
+        <img src="[https://ui-avatars.com/api/?name=Salon&background=8e5fff&color=fff"](https://ui-avatars.com/api/?name=Salon&background=8e5fff&color=fff") alt="Salon" />
+      </div>
+      -->
+      <div>
+        <div class="chat-brand-title">Impact Looks</div>
+        <div class="chat-brand-desc">We will reply as soon as we can<br><span class="chat-brand-sub">Ask us anything, or share your feedback.</span></div>
+      </div>
+    </div>
+    <div id="messages-scroll-area">
+      {% include "conversations/messages_list.html" %}
+    </div>
+    <form 
+      method="post"
+      hx-post="{% url 'conversations:thread_detail' thread.pk %}"
+      hx-target="#chat-widget"
+      hx-swap="outerHTML"
+      class="chat-form"
+      autocomplete="off"
+    >
+      {% csrf_token %}
+      <div class="chat-input-row">
+        {{ form.content }}
+        <button type="submit" class="chat-send-btn">
+          <svg width="22" height="22" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><path d="M22 2L11 13"></path><path d="M22 2L15 22L11 13L2 9L22 2Z"></path></svg>
+        </button>
+      </div>
+    </form>
+  </div>
+  <script>
+    var messagesArea = document.getElementById('messages-scroll-area');
+    if (messagesArea) messagesArea.scrollTop = messagesArea.scrollHeight;
+  </script>

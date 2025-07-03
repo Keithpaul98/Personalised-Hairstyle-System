@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ product.name }} - Details{% endblock title %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>{{ product.name }}</h2>
+        <div>
+            <a href="{% url 'Stock_Management:add_product_transaction' product_id=product.id %}" class="btn btn-success">
+                <i class="fas fa-exchange-alt"></i> Add Transaction
+            </a>
+            <a href="{% url 'Stock_Management:edit_product' product_id=product.id %}" class="btn btn-primary">
+                <i class="fas fa-edit"></i> Edit Product
+            </a>
+            <a href="{% url 'Stock_Management:product_list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Products
+            </a>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <!-- Product Details -->
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Product Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        {% if product.image %}
+                            <img src="{{ product.image.url }}" alt="{{ product.name }}" class="img-fluid rounded" style="max-height: 200px;">
+                        {% else %}
+                            <img src="{% static 'images/product-placeholder.png' %}" alt="{{ product.name }}" class="img-fluid rounded" style="max-height: 200px;">
+                        {% endif %}
+                    </div>
+                    
+                    <table class="table table-borderless">
+                        <tr>
+                            <th>Category:</th>
+                            <td>{{ product.category.name }}</td>
+                        </tr>
+                        <tr>
+                            <th>Price:</th>
+                            <td>MK{{ product.price }}</td>
+                        </tr>
+                        <tr>
+                            <th>Cost Price:</th>
+                            <td>MK{{ product.cost_price }}</td>
+                        </tr>
+                        <tr>
+                            <th>Current Stock:</th>
+                            <td>
+                                {% if product.is_low_stock %}
+                                    <span class="text-warning">{{ product.current_stock }}</span>
+                                {% elif product.current_stock == 0 %}
+                                    <span class="text-danger">{{ product.current_stock }}</span>
+                                {% else %}
+                                    <span class="text-success">{{ product.current_stock }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Minimum Stock:</th>
+                            <td>{{ product.minimum_stock }}</td>
+                        </tr>
+                        <tr>
+                            <th>Status:</th>
+                            <td>
+                                {% if product.is_active %}
+                                    <span class="badge bg-success">Active</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Inactive</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Usage Type:</th>
+                            <td>
+                                {% if product.usage_type == 'salon' %}
+                                    <span class="badge bg-info">Salon Use Only</span>
+                                {% elif product.usage_type == 'retail' %}
+                                    <span class="badge bg-primary">Retail Only</span>
+                                {% else %}
+                                    <span class="badge bg-purple">Both Salon and Retail</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% if product.barcode %}
+                        <tr>
+                            <th>Barcode:</th>
+                            <td>{{ product.barcode }}</td>
+                        </tr>
+                        {% endif %}
+                        <tr>
+                            <th>Created:</th>
+                            <td>{{ product.created_at|date:"M d, Y" }}</td>
+                        </tr>
+                        <tr>
+                            <th>Last Updated:</th>
+                            <td>{{ product.updated_at|date:"M d, Y" }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Product Description -->
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Description</h5>
+                </div>
+                <div class="card-body">
+                    <p>{{ product.description|linebreaks }}</p>
+                </div>
+            </div>
+            
+            <!-- Stock Transactions -->
+            <div class="card">
+                <div class="card-header bg-light">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Recent Transactions</h5>
+                        <a href="{% url 'Stock_Management:add_product_transaction' product_id=product.id %}" class="btn btn-sm btn-outline-success">
+                            <i class="fas fa-plus"></i> Add Transaction
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Type</th>
+                                    <th>Quantity</th>
+                                    <th>Unit Price</th>
+                                    <th>Total</th>
+                                    <th>Reference</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for transaction in transactions %}
+                                <tr>
+                                    <td>{{ transaction.transaction_date|date:"M d, Y H:i" }}</td>
+                                    <td>
+                                        {% if transaction.transaction_type == 'purchase' %}
+                                            <span class="badge bg-success">Purchase</span>
+                                        {% elif transaction.transaction_type == 'sale' %}
+                                            <span class="badge bg-primary">Sale</span>
+                                        {% elif transaction.transaction_type == 'return' %}
+                                            <span class="badge bg-info">Return</span>
+                                        {% elif transaction.transaction_type == 'adjustment' %}
+                                            <span class="badge bg-warning">Adjustment</span>
+                                        {% elif transaction.transaction_type == 'salon_usage' %}
+                                            <span class="badge bg-secondary">Salon Usage</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ transaction.quantity }}</td>
+                                    <td>MK{{ transaction.unit_price }}</td>
+                                    <td>MK{{ transaction.total_amount }}</td>
+                                    <td>{{ transaction.reference_number|default_if_none:"-" }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center">No transactions found for this product</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

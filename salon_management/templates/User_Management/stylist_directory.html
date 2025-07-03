@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body bg-light">
+                    <h2 class="text-primary mb-0"><i class="fas fa-cut mr-2"></i>Our Stylists</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        {% for stylist in stylists %}
+            <div class="col-md-4 mb-4">
+                <div class="card shadow h-100">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">{{ stylist.get_full_name|default:stylist.username }}</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="text-center mb-3">
+                            <img src="{{ stylist.profile_image.url|default:'https://via.placeholder.com/100' }}" 
+                                 alt="{{ stylist.get_full_name }}" 
+                                 class="rounded-circle img-thumbnail" 
+                                 style="width: 100px; height: 100px; object-fit: cover;">
+                            
+                            <div class="mt-2">
+                                <div class="rating">
+                                    {% with rating=stylist.average_rating|floatformat:0|add:"0" %}
+                                        {% for i in "12345" %}
+                                            {% if forloop.counter <= rating %}
+                                                <i class="fas fa-star text-warning"></i>
+                                            {% else %}
+                                                <i class="far fa-star text-muted"></i>
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% endwith %}
+                                </div>
+                                <small class="text-muted">{{ stylist.average_rating|floatformat:1 }} ({{ stylist.total_ratings }} reviews)</small>
+                            </div>
+                        </div>
+                        
+                        <h6 class="border-bottom pb-2 mb-2">Expertise</h6>
+                        <div class="mb-3">
+                            {% for service in stylist.expertise.all|slice:":3" %}
+                                <span class="badge badge-primary mb-1">{{ service.name }}</span>
+                            {% empty %}
+                                <span class="text-muted">No specialties listed</span>
+                            {% endfor %}
+                            {% if stylist.expertise.all|length > 3 %}
+                                <span class="badge badge-light">+{{ stylist.expertise.all|length|add:"-3" }} more</span>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="text-center mt-3">
+                            <a href="{% url 'User_Management:stylist_profile' stylist.id %}" class="btn btn-outline-primary">
+                                <i class="fas fa-user mr-1"></i> View Profile
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <div class="col-12">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle mr-2"></i> No stylists found.
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

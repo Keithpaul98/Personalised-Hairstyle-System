@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Your Try-On History{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h2 class="mb-0">Your Virtual Try-On History</h2>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for result in tryon_results %}
+                        <div class="col-md-4 mb-4">
+                            <div class="card h-100 shadow-sm">
+                                <img src="{{ result.result_image.url }}" class="card-img-top" alt="{{ result.hairstyle.name }}" style="height: 200px; object-fit: cover;">
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ result.hairstyle.name }}</h5>
+                                    <p class="card-text">
+                                        <small class="text-muted">
+                                            <i class="fas fa-calendar-alt"></i> {{ result.created_at|date:"F j, Y" }}
+                                        </small>
+                                    </p>
+                                    <p class="card-text">
+                                        <small class="text-muted">
+                                            <i class="fas fa-money-bill-wave"></i> MK{{ result.hairstyle.price }} | 
+                                            <i class="fas fa-clock"></i> {{ result.hairstyle.duration }}
+                                        </small>
+                                    </p>
+                                </div>
+                                <div class="card-footer bg-white border-top-0">
+                                    <div class="d-flex justify-content-between">
+                                        <a href="{% url 'virtual_tryon:book_appointment' tryon_id=result.id %}" class="btn btn-success btn-sm">
+                                            <i class="fas fa-calendar-check"></i> Book
+                                        </a>
+                                        <a href="{% url 'virtual_tryon:delete_tryon' tryon_id=result.id %}" class="btn btn-outline-danger btn-sm" onclick="return confirm('Are you sure you want to delete this try-on result?');">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="col-12">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i> You haven't tried on any hairstyles yet. 
+                                <a href="{% url 'virtual_tryon:upload_photo' %}" class="alert-link">Try one now!</a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="card-footer bg-light">
+                    <a href="{% url 'virtual_tryon:upload_photo' %}" class="btn btn-primary">
+                        <i class="fas fa-camera"></i> Try On New Hairstyles
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

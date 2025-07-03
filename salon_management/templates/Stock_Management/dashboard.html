@@ -1,0 +1,1158 @@
+{% extends "base.html" %}
+{% load static %}
+{% load stock_filters %}
+
+{% block title %}Stock Management Dashboard{% endblock title %}
+
+{% block extra_css %}
+<style>
+    /* Dashboard Layout */
+    .dashboard-container {
+        padding: 1.5rem 0;
+    }
+    
+    /* Chart Styles */
+    .chart-container {
+        height: 250px;
+        position: relative;
+        width: 100%;
+        background-color: #ffffff;
+        border-radius: 0.5rem;
+        overflow: hidden;
+        box-shadow: inset 0 0 0 1px rgba(0,0,0,0.05);
+        margin-bottom: 0;
+        min-height: 250px;
+        display: block;
+    }
+    
+    canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+    }
+    
+    /* Metric Cards */
+    .metric-card {
+        transition: all 0.3s ease;
+        border-radius: 0.75rem;
+        height: 100%;
+        overflow: hidden;
+        position: relative;
+        z-index: 1;
+    }
+    
+    .metric-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+    }
+    
+    .metric-value {
+        font-size: 2.2rem;
+        font-weight: 700;
+        line-height: 1.2;
+        margin-top: 0.5rem;
+    }
+    
+    .metric-label {
+        font-size: 0.95rem;
+        font-weight: 500;
+        color: rgba(255,255,255,0.9);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .metric-icon {
+        font-size: 3rem;
+        opacity: 0.2;
+        position: absolute;
+        right: 15px;
+        bottom: 10px;
+    }
+    
+    /* Card Styles */
+    .card {
+        border-radius: 0.75rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        margin-bottom: 1.5rem;
+        border: none;
+        overflow: hidden;
+        transition: all 0.2s ease;
+    }
+    
+    .card:hover {
+        box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+    }
+    
+    .card-header {
+        border-radius: 0.75rem 0.75rem 0 0 !important;
+        font-weight: 600;
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+    }
+    
+    .card-body {
+        padding: 1.25rem;
+    }
+    
+    .card-footer {
+        padding: 0.75rem 1.25rem;
+        background: transparent;
+    }
+    
+    /* Table Styles */
+    .table-responsive {
+        border-radius: 0 0 0.75rem 0.75rem;
+    }
+    
+    .table {
+        margin-bottom: 0;
+    }
+    
+    .table thead th {
+        border-top: none;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        letter-spacing: 0.5px;
+        color: #555;
+    }
+    
+    .table-hover tbody tr:hover {
+        background-color: rgba(78, 115, 223, 0.05);
+    }
+    
+    /* Navigation Pills */
+    .nav-pills .nav-link.active {
+        background-color: #4e73df;
+        box-shadow: 0 4px 8px rgba(78, 115, 223, 0.3);
+    }
+    
+    .nav-pills .nav-link {
+        color: #5a5c69;
+        font-weight: 500;
+        border-radius: 0.5rem;
+        padding: 0.4rem 1rem;
+        transition: all 0.2s ease;
+    }
+    
+    .nav-pills .nav-link:hover:not(.active) {
+        background-color: #f8f9fc;
+    }
+    
+    /* Dashboard Header */
+    .dashboard-header {
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+    }
+    
+    .dashboard-title {
+        font-weight: 700;
+        color: #333;
+    }
+    
+    /* Badges */
+    .badge {
+        font-weight: 500;
+        padding: 0.5em 0.8em;
+        border-radius: 0.5rem;
+    }
+    
+    /* Buttons */
+    .btn-sm {
+        border-radius: 0.5rem;
+        font-weight: 500;
+    }
+    
+    /* SVG Charts */
+    svg text {
+        font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+    }
+</style>
+{% endblock extra_css %}
+
+{% block content %}
+<div class="container-fluid dashboard-container">
+    <!-- Dashboard Header -->
+    <div class="dashboard-header d-flex justify-content-between align-items-center">
+        <h2 class="dashboard-title"><i class="fas fa-tachometer-alt me-2"></i> Stock Management Dashboard</h2>
+        <div>
+            <span class="text-muted me-3"><i class="far fa-clock me-1"></i> Last updated: {{ last_updated|date:"j M Y, g:i a" }}</span>
+            <a href="javascript:window.location.reload();" class="btn btn-sm btn-primary">
+                <i class="fas fa-sync-alt me-1"></i> Refresh
+            </a>
+        </div>
+    </div>
+
+    <!-- Key Metrics Row -->
+    <div class="row mb-4">
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card bg-primary text-white metric-card">
+                <div class="card-body">
+                    <div class="metric-label">Total Inventory Value</div>
+                    <div class="metric-value">MWK {{ inventory_value|floatformat:0 }}</div>
+                    <div class="metric-icon">
+                        <i class="fas fa-dollar-sign"></i>
+                    </div>
+                </div>
+                <div class="card-footer bg-primary border-0 py-1">
+                    <small>
+                        <a href="{% url 'Stock_Management:inventory_value_report' %}" class="text-white">
+                            View Details <i class="fas fa-arrow-right ms-1"></i>
+                        </a>
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card bg-success text-white metric-card">
+                <div class="card-body">
+                    <div class="metric-label">Products in Stock</div>
+                    <div class="metric-value">{{ active_products }}</div>
+                    <div class="metric-icon">
+                        <i class="fas fa-box"></i>
+                    </div>
+                </div>
+                <div class="card-footer bg-success border-0 py-1">
+                    <small>
+                        <a href="{% url 'Stock_Management:product_list' %}" class="text-white">
+                            View Products <i class="fas fa-arrow-right ms-1"></i>
+                        </a>
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card bg-warning text-white metric-card">
+                <div class="card-body">
+                    <div class="metric-label">Low Stock Items</div>
+                    <div class="metric-value">{{ low_stock_products }}</div>
+                    <div class="metric-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                </div>
+                <div class="card-footer bg-warning border-0 py-1">
+                    <small>
+                        <a href="{% url 'Stock_Management:low_stock_report' %}" class="text-white">
+                            View Report <i class="fas fa-arrow-right ms-1"></i>
+                        </a>
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card bg-danger text-white metric-card">
+                <div class="card-body">
+                    <div class="metric-label">Out of Stock</div>
+                    <div class="metric-value">{{ out_of_stock }}</div>
+                    <div class="metric-icon">
+                        <i class="fas fa-times-circle"></i>
+                    </div>
+                </div>
+                <div class="card-footer bg-danger border-0 py-1">
+                    <small>
+                        <a href="{% url 'Stock_Management:product_list' %}?status=out" class="text-white">
+                            View Items <i class="fas fa-arrow-right ms-1"></i>
+                        </a>
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sales Metrics Row -->
+    <div class="row mb-4">
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card bg-info text-white metric-card">
+                <div class="card-body">
+                    <div class="metric-label">Today's Sales</div>
+                    <div class="metric-value">{{ todays_sales_count }} items</div>
+                    <div class="metric-icon">
+                        <i class="fas fa-shopping-cart"></i>
+                    </div>
+                </div>
+                <div class="card-footer bg-info border-0 py-1">
+                    <small>
+                        <a href="{% url 'Stock_Management:transaction_list' %}?type=sale&start_date={{ today|date:'Y-m-d' }}&end_date={{ today|date:'Y-m-d' }}" class="text-white">
+                            View Sales <i class="fas fa-arrow-right ms-1"></i>
+                        </a>
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card bg-info text-white metric-card">
+                <div class="card-body">
+                    <div class="metric-label">Today's Sales Value</div>
+                    <div class="metric-value">MWK {{ todays_sales_value|floatformat:0 }}</div>
+                    <div class="metric-icon">
+                        <i class="fas fa-money-bill-wave"></i>
+                    </div>
+                </div>
+                <div class="card-footer bg-info border-0 py-1">
+                    <small>
+                        <a href="{% url 'Stock_Management:transaction_list' %}?type=sale&start_date={{ today|date:'Y-m-d' }}&end_date={{ today|date:'Y-m-d' }}" class="text-white">
+                            View Details <i class="fas fa-arrow-right ms-1"></i>
+                        </a>
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card bg-secondary text-white metric-card">
+                <div class="card-body">
+                    <div class="metric-label">Pending Orders</div>
+                    <div class="metric-value">{{ pending_orders }}</div>
+                    <div class="metric-icon">
+                        <i class="fas fa-truck-loading"></i>
+                    </div>
+                </div>
+                <div class="card-footer bg-secondary border-0 py-1">
+                    <small>
+                        <a href="{% url 'Stock_Management:purchase_order_list' %}?status=pending" class="text-white">
+                            View Orders <i class="fas fa-arrow-right ms-1"></i>
+                        </a>
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card bg-primary text-white metric-card">
+                <div class="card-body">
+                    <div class="metric-label">Monthly Sales</div>
+                    <div class="metric-value">MWK {{ monthly_sales_value|floatformat:0 }}</div>
+                    <div class="metric-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                </div>
+                <div class="card-footer bg-primary border-0 py-1">
+                    <small>
+                        <a href="{% url 'Stock_Management:transaction_list' %}?type=sale" class="text-white">
+                            View All <i class="fas fa-arrow-right ms-1"></i>
+                        </a>
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-chart-line me-2 text-primary"></i> Inventory Value Trends</h5>
+                    <ul class="nav nav-pills" id="inventoryTrendTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active py-1 px-3" id="monthly-tab" data-bs-toggle="pill" data-bs-target="#monthly" type="button" role="tab">Monthly</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link py-1 px-3" id="quarterly-tab" data-bs-toggle="pill" data-bs-target="#quarterly" type="button" role="tab">Quarterly</button>
+                        </li>
+                    </ul>
+                </div>
+                <div class="card-body">
+                    <div class="tab-content">
+                        <div class="tab-pane fade show active" id="monthly" role="tabpanel">
+                            <div class="chart-container">
+                                <!-- SVG chart replacing JavaScript chart for monthly data -->
+                                <svg width="100%" height="250" viewBox="0 0 700 250" style="background-color: white;">
+                                    <!-- Title -->
+                                    <text x="350" y="30" text-anchor="middle" font-size="14" font-weight="bold">Monthly Inventory Value (MWK)</text>
+                                    
+                                    <!-- X-axis -->
+                                    <line x1="50" y1="200" x2="650" y2="200" stroke="#ccc" stroke-width="1" />
+                                    <!-- Y-axis -->
+                                    <line x1="50" y1="200" x2="50" y2="50" stroke="#ccc" stroke-width="1" />
+                                    
+                                    <!-- X-axis labels (months) -->
+                                    <text x="75" y="220" text-anchor="middle" font-size="10" fill="#333333">Jan</text>
+                                    <text x="125" y="220" text-anchor="middle" font-size="10" fill="#333333">Feb</text>
+                                    <text x="175" y="220" text-anchor="middle" font-size="10" fill="#333333">Mar</text>
+                                    <text x="225" y="220" text-anchor="middle" font-size="10" fill="#333333">Apr</text>
+                                    <text x="275" y="220" text-anchor="middle" font-size="10" fill="#333333">May</text>
+                                    <text x="325" y="220" text-anchor="middle" font-size="10" fill="#333333">Jun</text>
+                                    <text x="375" y="220" text-anchor="middle" font-size="10" fill="#333333">Jul</text>
+                                    <text x="425" y="220" text-anchor="middle" font-size="10" fill="#333333">Aug</text>
+                                    <text x="475" y="220" text-anchor="middle" font-size="10" fill="#333333">Sep</text>
+                                    <text x="525" y="220" text-anchor="middle" font-size="10" fill="#333333">Oct</text>
+                                    <text x="575" y="220" text-anchor="middle" font-size="10" fill="#333333">Nov</text>
+                                    <text x="625" y="220" text-anchor="middle" font-size="10" fill="#333333">Dec</text>
+                                    
+                                    <!-- Y-axis labels -->
+                                    <text x="45" y="200" text-anchor="end" font-size="10">0</text>
+                                    <text x="45" y="170" text-anchor="end" font-size="10">10K</text>
+                                    <text x="45" y="140" text-anchor="end" font-size="10">20K</text>
+                                    <text x="45" y="110" text-anchor="end" font-size="10">30K</text>
+                                    <text x="45" y="80" text-anchor="end" font-size="10">40K</text>
+                                    <text x="45" y="50" text-anchor="end" font-size="10">50K</text>
+                                    
+                                    <!-- Grid lines -->
+                                    <line x1="50" y1="170" x2="650" y2="170" stroke="#eee" stroke-width="1" />
+                                    <line x1="50" y1="140" x2="650" y2="140" stroke="#eee" stroke-width="1" />
+                                    <line x1="50" y1="110" x2="650" y2="110" stroke="#eee" stroke-width="1" />
+                                    <line x1="50" y1="80" x2="650" y2="80" stroke="#eee" stroke-width="1" />
+                                    <line x1="50" y1="50" x2="650" y2="50" stroke="#eee" stroke-width="1" />
+                                    
+                                    <!-- Data points and line -->
+                                    <polyline 
+                                        points="
+                                            {% for item in inventory_trends %}
+                                                {% with y_pos=200|sub:item.value|div:1000|mul:4 %}
+                                                    {{ forloop.counter0|mul:50|add:75 }},{{ y_pos }}
+                                                {% endwith %}
+                                                {% if not forloop.last %} {% endif %}
+                                            {% endfor %}
+                                        " 
+                                        fill="none" 
+                                        stroke="#4e73df" 
+                                        stroke-width="3"
+                                        stroke-linejoin="round"
+                                        stroke-linecap="round" />
+                                    
+                                    <!-- Data points -->
+                                    {% for item in inventory_trends %}
+                                        {% with y_pos=200|sub:item.value|div:1000|mul:4 %}
+                                            <circle cx="{{ forloop.counter0|mul:50|add:75 }}" cy="{{ y_pos }}" r="4" fill="#4e73df" />
+                                        {% endwith %}
+                                    {% endfor %}
+                                    
+                                    <!-- Value labels -->
+                                    {% for item in inventory_trends %}
+                                        {% with y_pos=200|sub:item.value|div:1000|mul:4 %}
+                                            <text 
+                                                x="{{ forloop.counter0|mul:50|add:75 }}" 
+                                                y="{{ y_pos|sub:10 }}" 
+                                                text-anchor="middle" 
+                                                font-size="10" 
+                                                fill="#333">
+                                                {{ item.value|floatformat:0 }}
+                                            </text>
+                                        {% endwith %}
+                                    {% endfor %}
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="quarterly" role="tabpanel">
+                            <div class="chart-container">
+                                <!-- SVG chart replacing JavaScript chart for quarterly data -->
+                                <svg width="100%" height="250" viewBox="0 0 700 250" style="background-color: white;">
+                                    <!-- Title -->
+                                    <text x="350" y="30" text-anchor="middle" font-size="14" font-weight="bold">Quarterly Inventory Value (MWK)</text>
+                                    
+                                    <!-- X-axis -->
+                                    <line x1="50" y1="200" x2="650" y2="200" stroke="#ccc" stroke-width="1" />
+                                    <!-- Y-axis -->
+                                    <line x1="50" y1="200" x2="50" y2="50" stroke="#ccc" stroke-width="1" />
+                                    
+                                    <!-- X-axis labels (quarters) -->
+                                    <text x="175" y="220" text-anchor="middle" font-size="12" fill="#333333">Q1</text>
+                                    <text x="325" y="220" text-anchor="middle" font-size="12" fill="#333333">Q2</text>
+                                    <text x="475" y="220" text-anchor="middle" font-size="12" fill="#333333">Q3</text>
+                                    <text x="625" y="220" text-anchor="middle" font-size="12" fill="#333333">Q4</text>
+                                    
+                                    <!-- Y-axis labels -->
+                                    <text x="45" y="200" text-anchor="end" font-size="10">0</text>
+                                    <text x="45" y="170" text-anchor="end" font-size="10">10K</text>
+                                    <text x="45" y="140" text-anchor="end" font-size="10">20K</text>
+                                    <text x="45" y="110" text-anchor="end" font-size="10">30K</text>
+                                    <text x="45" y="80" text-anchor="end" font-size="10">40K</text>
+                                    <text x="45" y="50" text-anchor="end" font-size="10">50K</text>
+                                    
+                                    <!-- Grid lines -->
+                                    <line x1="50" y1="170" x2="650" y2="170" stroke="#eee" stroke-width="1" />
+                                    <line x1="50" y1="140" x2="650" y2="140" stroke="#eee" stroke-width="1" />
+                                    <line x1="50" y1="110" x2="650" y2="110" stroke="#eee" stroke-width="1" />
+                                    <line x1="50" y1="80" x2="650" y2="80" stroke="#eee" stroke-width="1" />
+                                    <line x1="50" y1="50" x2="650" y2="50" stroke="#eee" stroke-width="1" />
+                                    
+                                    <!-- Bars for quarterly data -->
+                                    {% for item in inventory_quarterly %}
+                                        <rect 
+                                            x="{{ forloop.counter0|mul:150|add:125 }}" 
+                                            y="{{ 200|sub:item.value|div:1000|mul:4 }}" 
+                                            width="100" 
+                                            height="{{ item.value|div:1000|mul:4 }}" 
+                                            fill="{% cycle '#4e73df' '#1cc88a' '#36b9cc' '#f6c23e' %}" 
+                                            rx="4" 
+                                            ry="4" />
+                                        <text 
+                                            x="{{ forloop.counter0|mul:150|add:175 }}" 
+                                            y="{{ 200|sub:item.value|div:1000|mul:4|add:20 }}" 
+                                            text-anchor="middle" 
+                                            font-size="14" 
+                                            font-weight="bold" 
+                                            fill="white">
+                                            {{ item.value|floatformat:0 }}
+                                        </text>
+                                    {% endfor %}
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-chart-pie me-2 text-info"></i> Inventory by Category</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <!-- SVG chart replacing JavaScript chart -->
+                        <svg width="100%" height="250" viewBox="0 0 400 250" style="background-color: white;">
+                            <!-- Title -->
+                            <text x="200" y="30" text-anchor="middle" font-size="14" font-weight="bold">Product Stock Levels</text>
+                            
+                            <!-- Product bars - top 5 products -->
+                            <!-- Curl Enhancing Cream -->
+                            <rect x="30" y="70" width="60" height="160" fill="#4e73df" rx="4" ry="4" />
+                            <text x="60" y="90" text-anchor="middle" font-size="14" font-weight="bold" fill="white">80</text>
+                            <text x="60" y="210" text-anchor="middle" font-size="10">Curl Enhancing...</text>
+                            
+                            <!-- Scalp Therapy Treatment -->
+                            <rect x="100" y="130" width="60" height="100" fill="#1cc88a" rx="4" ry="4" />
+                            <text x="130" y="150" text-anchor="middle" font-size="14" font-weight="bold" fill="white">50</text>
+                            <text x="130" y="210" text-anchor="middle" font-size="10">Scalp Therapy...</text>
+                            
+                            <!-- Salon Professional Moisturizing Shampoo -->
+                            <rect x="170" y="130" width="60" height="100" fill="#36b9cc" rx="4" ry="4" />
+                            <text x="200" y="150" text-anchor="middle" font-size="14" font-weight="bold" fill="white">50</text>
+                            <text x="200" y="210" text-anchor="middle" font-size="10">Salon Pro...</text>
+                            
+                            <!-- Intensive Repair Conditioner -->
+                            <rect x="240" y="134" width="60" height="96" fill="#f6c23e" rx="4" ry="4" />
+                            <text x="270" y="154" text-anchor="middle" font-size="14" font-weight="bold" fill="white">48</text>
+                            <text x="270" y="210" text-anchor="middle" font-size="10">Intensive...</text>
+                            
+                            <!-- Hydrating Leave-In Conditioner -->
+                            <rect x="310" y="140" width="60" height="90" fill="#e74a3b" rx="4" ry="4" />
+                            <text x="340" y="160" text-anchor="middle" font-size="14" font-weight="bold" fill="white">45</text>
+                            <text x="340" y="210" text-anchor="middle" font-size="10">Hydrating...</text>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-chart-pie me-2 text-info"></i> Sales vs. Salon Usage</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <!-- SVG chart for Sales vs. Salon Usage comparison -->
+                        <svg width="100%" height="300" viewBox="0 0 900 300" style="background-color: white;">
+                            <!-- Title -->
+                            <text x="450" y="30" text-anchor="middle" font-size="16" font-weight="bold">Monthly Product Usage Comparison</text>
+                            
+                            <!-- X-axis -->
+                            <line x1="50" y1="250" x2="850" y2="250" stroke="#ccc" stroke-width="1" />
+                            <!-- Y-axis -->
+                            <line x1="50" y1="250" x2="50" y2="50" stroke="#ccc" stroke-width="1" />
+                            
+                            <!-- X-axis labels (months) -->
+                            {% for item in monthly_comparison %}
+                                <text 
+                                    x="{{ forloop.counter0|mul:65|add:85 }}" 
+                                    y="270" 
+                                    text-anchor="middle" 
+                                    font-size="12" 
+                                    fill="#333333">
+                                    {{ item.month }}
+                                </text>
+                            {% endfor %}
+                            
+                            <!-- Y-axis labels -->
+                            <text x="45" y="250" text-anchor="end" font-size="10">0</text>
+                            <text x="45" y="210" text-anchor="end" font-size="10">50</text>
+                            <text x="45" y="170" text-anchor="end" font-size="10">100</text>
+                            <text x="45" y="130" text-anchor="end" font-size="10">150</text>
+                            <text x="45" y="90" text-anchor="end" font-size="10">200</text>
+                            <text x="45" y="50" text-anchor="end" font-size="10">250</text>
+                            
+                            <!-- Grid lines -->
+                            <line x1="50" y1="210" x2="850" y2="210" stroke="#eee" stroke-width="1" />
+                            <line x1="50" y1="170" x2="850" y2="170" stroke="#eee" stroke-width="1" />
+                            <line x1="50" y1="130" x2="850" y2="130" stroke="#eee" stroke-width="1" />
+                            <line x1="50" y1="90" x2="850" y2="90" stroke="#eee" stroke-width="1" />
+                            <line x1="50" y1="50" x2="850" y2="50" stroke="#eee" stroke-width="1" />
+                            
+                            <!-- Bars for retail sales -->
+                            {% for item in monthly_comparison %}
+                                <rect 
+                                    x="{{ forloop.counter0|mul:65|add:70 }}" 
+                                    y="{{ 250|sub:item.retail|mul:0.8 }}" 
+                                    width="25" 
+                                    height="{{ item.retail|mul:0.8 }}" 
+                                    fill="#4e73df" 
+                                    rx="3" 
+                                    ry="3" />
+                                
+                                <!-- Value label for retail -->
+                                <text 
+                                    x="{{ forloop.counter0|mul:65|add:82 }}" 
+                                    y="{{ 250|sub:item.retail|mul:0.8|sub:5 }}" 
+                                    text-anchor="middle" 
+                                    font-size="10" 
+                                    fill="#333333">
+                                    {{ item.retail }}
+                                </text>
+                            {% endfor %}
+                            
+                            <!-- Bars for salon usage -->
+                            {% for item in monthly_comparison %}
+                                <rect 
+                                    x="{{ forloop.counter0|mul:65|add:100 }}" 
+                                    y="{{ 250|sub:item.salon|mul:0.8 }}" 
+                                    width="25" 
+                                    height="{{ item.salon|mul:0.8 }}" 
+                                    fill="#1cc88a" 
+                                    rx="3" 
+                                    ry="3" />
+                                
+                                <!-- Value label for salon -->
+                                <text 
+                                    x="{{ forloop.counter0|mul:65|add:112 }}" 
+                                    y="{{ 250|sub:item.salon|mul:0.8|sub:5 }}" 
+                                    text-anchor="middle" 
+                                    font-size="10" 
+                                    fill="#333333">
+                                    {{ item.salon }}
+                                </text>
+                            {% endfor %}
+                            
+                            <!-- Legend -->
+                            <rect x="650" y="30" width="15" height="15" fill="#4e73df" rx="2" ry="2" />
+                            <text x="670" y="43" font-size="12" fill="#333333">Retail Sales</text>
+                            <rect x="750" y="30" width="15" height="15" fill="#1cc88a" rx="2" ry="2" />
+                            <text x="770" y="43" font-size="12" fill="#333333">Salon Usage</text>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-chart-line me-2 text-success"></i> Product Usage</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <!-- SVG chart replacing JavaScript chart -->
+                        <svg width="100%" height="250" viewBox="0 0 500 250" style="background-color: white;">
+                            <!-- Title -->
+                            <text x="250" y="30" text-anchor="middle" font-size="14" font-weight="bold">Top Selling Products This Month</text>
+                            
+                            <!-- X-axis -->
+                            <line x1="50" y1="200" x2="450" y2="200" stroke="#ccc" stroke-width="1" />
+                            <!-- Y-axis -->
+                            <line x1="50" y1="200" x2="50" y2="50" stroke="#ccc" stroke-width="1" />
+                            
+                            <!-- Y-axis labels -->
+                            <text x="45" y="200" text-anchor="end" font-size="10">0</text>
+                            <text x="45" y="150" text-anchor="end" font-size="10">5</text>
+                            <text x="45" y="100" text-anchor="end" font-size="10">10</text>
+                            <text x="45" y="50" text-anchor="end" font-size="10">15</text>
+                            
+                            {% if top_selling_products %}
+                                {% with first_product=top_selling_products.0 %}
+                                    <!-- First product bar - just a small line for value 1 -->
+                                    <rect x="100" y="195" width="60" height="5" fill="#4e73df" rx="4" ry="4" />
+                                    <text x="130" y="185" text-anchor="middle" font-size="14" font-weight="bold" fill="#4e73df">{{ first_product.total_quantity }}</text>
+                                    <text x="130" y="220" text-anchor="middle" font-size="12">{{ first_product.product__name|truncatechars:12 }}</text>
+                                {% endwith %}
+                                
+                                <!-- Other product bars - for visualization -->
+                                <!-- Salon Professional Moisturizing Shampoo -->
+                                <rect x="180" y="200" width="60" height="0" fill="#1cc88a" rx="4" ry="4" />
+                                <text x="210" y="185" text-anchor="middle" font-size="14" font-weight="bold" fill="#1cc88a">0</text>
+                                <text x="210" y="220" text-anchor="middle" font-size="12">Salon Pro...</text>
+                                
+                                <!-- Hydrating Leave-In Conditioner -->
+                                <rect x="260" y="200" width="60" height="0" fill="#36b9cc" rx="4" ry="4" />
+                                <text x="290" y="185" text-anchor="middle" font-size="14" font-weight="bold" fill="#36b9cc">0</text>
+                                <text x="290" y="220" text-anchor="middle" font-size="12">Hydrating...</text>
+                                
+                                <!-- Texturizing Clay -->
+                                <rect x="340" y="200" width="60" height="0" fill="#f6c23e" rx="4" ry="4" />
+                                <text x="370" y="185" text-anchor="middle" font-size="14" font-weight="bold" fill="#f6c23e">0</text>
+                                <text x="370" y="220" text-anchor="middle" font-size="12">Texturizing...</text>
+                            {% else %}
+                                <text x="250" y="150" text-anchor="middle" font-size="14">No sales data available</text>
+                            {% endif %}
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Selling Products Row -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i> Top Selling Products This Month</h5>
+                    <a href="{% url 'Stock_Management:transaction_list' %}?type=sale" class="btn btn-sm btn-primary">
+                        <i class="fas fa-eye me-1"></i> View All Sales
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Quantity Sold</th>
+                                    <th>Total Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if top_selling_products %}
+                                {% for product in top_selling_products %}
+                                <tr>
+                                    <td>{{ product.product__name }}</td>
+                                    <td>{{ product.total_quantity }}</td>
+                                    <td>MWK {{ product.total_value|floatformat:0 }}</td>
+                                </tr>
+                                {% endfor %}
+                                {% else %}
+                                <tr>
+                                    <td colspan="3" class="text-center py-3">No sales recorded this month</td>
+                                </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Product Stock and Sales Charts Row -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-boxes me-2 text-primary"></i> Current Stock Levels</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <!-- SVG chart replacing JavaScript chart -->
+                        <svg width="100%" height="250" viewBox="0 0 600 250" style="background-color: white;">
+                            <!-- Title -->
+                            <text x="300" y="30" text-anchor="middle" font-size="14" font-weight="bold">Top Products by Stock Level</text>
+                            
+                            <!-- X-axis -->
+                            <line x1="50" y1="200" x2="550" y2="200" stroke="#ccc" stroke-width="1" />
+                            <!-- Y-axis -->
+                            <line x1="50" y1="200" x2="50" y2="50" stroke="#ccc" stroke-width="1" />
+                            
+                            <!-- Y-axis labels -->
+                            <text x="45" y="200" text-anchor="end" font-size="10">0</text>
+                            <text x="45" y="160" text-anchor="end" font-size="10">25</text>
+                            <text x="45" y="120" text-anchor="end" font-size="10">50</text>
+                            <text x="45" y="80" text-anchor="end" font-size="10">75</text>
+                            <text x="45" y="40" text-anchor="end" font-size="10">100</text>
+                            
+                            <!-- Static example bars for demonstration -->
+                            <!-- Curl Enhancing Cream -->
+                            <rect x="80" y="40" width="70" height="160" fill="#4e73df" rx="4" ry="4" />
+                            <text x="115" y="60" text-anchor="middle" font-size="14" font-weight="bold" fill="white">80</text>
+                            <text x="115" y="220" text-anchor="middle" font-size="10">Curl Enhancing...</text>
+                            
+                            <!-- Scalp Therapy Treatment -->
+                            <rect x="180" y="100" width="70" height="100" fill="#1cc88a" rx="4" ry="4" />
+                            <text x="215" y="120" text-anchor="middle" font-size="14" font-weight="bold" fill="white">50</text>
+                            <text x="215" y="220" text-anchor="middle" font-size="10">Scalp Therapy...</text>
+                            
+                            <!-- Salon Professional Moisturizing Shampoo -->
+                            <rect x="280" y="100" width="70" height="100" fill="#36b9cc" rx="4" ry="4" />
+                            <text x="315" y="120" text-anchor="middle" font-size="14" font-weight="bold" fill="white">50</text>
+                            <text x="315" y="220" text-anchor="middle" font-size="10">Salon Pro...</text>
+                            
+                            <!-- Intensive Repair Conditioner -->
+                            <rect x="380" y="104" width="70" height="96" fill="#f6c23e" rx="4" ry="4" />
+                            <text x="415" y="124" text-anchor="middle" font-size="14" font-weight="bold" fill="white">48</text>
+                            <text x="415" y="220" text-anchor="middle" font-size="10">Intensive...</text>
+                            
+                            <!-- Hydrating Leave-In Conditioner -->
+                            <rect x="480" y="110" width="70" height="90" fill="#e74a3b" rx="4" ry="4" />
+                            <text x="515" y="130" text-anchor="middle" font-size="14" font-weight="bold" fill="white">45</text>
+                            <text x="515" y="220" text-anchor="middle" font-size="10">Hydrating...</text>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar me-2 text-success"></i> Sales by Product (Last 30 Days)</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <!-- SVG chart replacing JavaScript chart -->
+                        <svg width="100%" height="250" viewBox="0 0 600 250" style="background-color: white;">
+                            <!-- Title -->
+                            <text x="300" y="30" text-anchor="middle" font-size="14" font-weight="bold">Top Selling Products (Last 30 Days)</text>
+                            
+                            <!-- X-axis -->
+                            <line x1="50" y1="200" x2="550" y2="200" stroke="#ccc" stroke-width="1" />
+                            <!-- Y-axis -->
+                            <line x1="50" y1="200" x2="50" y2="50" stroke="#ccc" stroke-width="1" />
+                            
+                            <!-- Y-axis labels -->
+                            <text x="45" y="200" text-anchor="end" font-size="10">0</text>
+                            <text x="45" y="170" text-anchor="end" font-size="10">5</text>
+                            <text x="45" y="140" text-anchor="end" font-size="10">10</text>
+                            <text x="45" y="110" text-anchor="end" font-size="10">15</text>
+                            <text x="45" y="80" text-anchor="end" font-size="10">20</text>
+                            <text x="45" y="50" text-anchor="end" font-size="10">25</text>
+                            
+                            <!-- Product bars -->
+                            {% if sales_by_product %}
+                                {% for item in sales_by_product|slice:":5" %}
+                                    <rect 
+                                        x="{{ forloop.counter0|mul:100|add:80 }}" 
+                                        y="{{ 200|sub:item.total_quantity|mul:6 }}" 
+                                        width="70" 
+                                        height="{{ item.total_quantity|mul:6 }}" 
+                                        fill="{% cycle '#4e73df' '#1cc88a' '#36b9cc' '#f6c23e' '#e74a3b' %}"
+                                        rx="4" ry="4" />
+                                    
+                                    <text 
+                                        x="{{ forloop.counter0|mul:100|add:105 }}" 
+                                        y="{{ 190|sub:item.total_quantity|mul:6 }}" 
+                                        text-anchor="middle" 
+                                        font-size="14"
+                                        font-weight="bold"
+                                        fill="{% if item.total_quantity > 5 %}white{% else %}#333333{% endif %}">
+                                        {{ item.total_quantity }}
+                                    </text>
+                                    
+                                    <text 
+                                        x="{{ forloop.counter0|mul:100|add:105 }}" 
+                                        y="220" 
+                                        text-anchor="middle" 
+                                        font-size="10"
+                                        fill="#333333">
+                                        {{ item.product__name|truncatechars:12 }}
+                                    </text>
+                                {% endfor %}
+                            {% else %}
+                                <text x="300" y="125" text-anchor="middle" font-size="14">No sales data available</text>
+                            {% endif %}
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tables Row -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-exclamation-triangle me-2 text-warning"></i> Low Stock Items</h5>
+                    <a href="{% url 'Stock_Management:low_stock_report' %}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-eye me-1"></i> View All
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Current Stock</th>
+                                    <th>Min Stock</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if low_stock_products %}
+                                {% for product in low_stock_products %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'Stock_Management:product_detail' product_id=product.id %}" class="text-decoration-none">
+                                            {{ product.name }}
+                                        </a>
+                                    </td>
+                                    <td>{{ product.current_stock }}</td>
+                                    <td>{{ product.min_stock }}</td>
+                                    <td>
+                                        {% if product.current_stock == 0 %}
+                                        <span class="badge bg-danger">Out of Stock</span>
+                                        {% else %}
+                                        <span class="badge bg-warning text-dark">Low Stock</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'Stock_Management:create_purchase_order' %}?product={{ product.id }}" class="btn btn-sm btn-primary">
+                                            <i class="fas fa-shopping-cart"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                                {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center py-3">No low stock items</td>
+                                </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-exchange-alt me-2 text-info"></i> Recent Transactions</h5>
+                    <a href="{% url 'Stock_Management:transaction_list' %}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-eye me-1"></i> View All
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Product</th>
+                                    <th>Type</th>
+                                    <th>Quantity</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if recent_transactions %}
+                                {% for transaction in recent_transactions|slice:":5" %}
+                                <tr>
+                                    <td>{{ transaction.transaction_date|date:"d M Y" }}</td>
+                                    <td>
+                                        <a href="{% url 'Stock_Management:product_detail' product_id=transaction.product.id %}" class="text-decoration-none">
+                                            {{ transaction.product.name }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        {% if transaction.transaction_type == 'sale' %}
+                                        <span class="badge bg-success">Sale</span>
+                                        {% elif transaction.transaction_type == 'salon_usage' %}
+                                        <span class="badge bg-info">Salon</span>
+                                        {% elif transaction.transaction_type == 'purchase' %}
+                                        <span class="badge bg-primary">Purchase</span>
+                                        {% elif transaction.transaction_type == 'adjustment' %}
+                                        <span class="badge bg-warning text-dark">Adjustment</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ transaction.quantity }}</td>
+                                </tr>
+                                {% endfor %}
+                                {% else %}
+                                <tr>
+                                    <td colspan="4" class="text-center py-3">No recent transactions</td>
+                                </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Pending Purchase Orders</h5>
+                    <a href="{% url 'Stock_Management:purchase_order_list' %}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Order #</th>
+                                    <th>Supplier</th>
+                                    <th>Date</th>
+                                    <th>Items</th>
+                                    <th>Total Value</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if pending_orders_list %}
+                                {% for order in pending_orders_list %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'Stock_Management:purchase_order_detail' order_id=order.id %}">
+                                            #{{ order.id }}
+                                        </a>
+                                    </td>
+                                    <td>{{ order.supplier.name }}</td>
+                                    <td>{{ order.order_date|date:"d/m/Y" }}</td>
+                                    <td>{{ order.items.count }}</td>
+                                    <td>MWK {{ order.total_price|floatformat:2 }}</td>
+                                    <td>
+                                        {% if order.status == 'pending' %}
+                                        <span class="badge bg-warning text-dark">Pending</span>
+                                        {% elif order.status == 'ordered' %}
+                                        <span class="badge bg-primary">Ordered</span>
+                                        {% elif order.status == 'partial' %}
+                                        <span class="badge bg-info">Partially Received</span>
+                                        {% elif order.status == 'received' %}
+                                        <span class="badge bg-success">Received</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">{{ order.status }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if order.status == 'ordered' or order.status == 'partial' %}
+                                        <a href="{% url 'Stock_Management:receive_items' order_id=order.id %}" class="btn btn-sm btn-success">
+                                            <i class="fas fa-check"></i>
+                                        </a>
+                                        {% endif %}
+                                        <a href="{% url 'Stock_Management:purchase_order_detail' order_id=order.id %}" class="btn btn-sm btn-info">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                                {% else %}
+                                <tr>
+                                    <td colspan="7" class="text-center py-3">No pending orders</td>
+                                </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block extra_js %}
+<!-- Google Charts -->
+<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+<script type="text/javascript">
+    // Load the Visualization API and the corechart package.
+    google.charts.load('current', {'packages':['corechart']});
+    
+    // Set a callback to run when the Google Visualization API is loaded.
+    google.charts.setOnLoadCallback(drawCharts);
+    
+    // Callback that creates and populates a data table,
+    // instantiates the chart, passes in the data and draws it.
+    function drawCharts() {
+        // Test chart
+        drawTestChart();
+    }
+    
+    function drawTestChart() {
+        // Create the data table.
+        var data = new google.visualization.DataTable();
+        data.addColumn('string', 'Category');
+        data.addColumn('number', 'Value');
+        data.addRows([
+            ['Red', 12],
+            ['Blue', 19],
+            ['Yellow', 3],
+            ['Green', 5],
+            ['Purple', 2]
+        ]);
+        
+        // Set chart options
+        var options = {
+            'title': 'Test Chart',
+            'width': '100%',
+            'height': 250,
+            'backgroundColor': 'transparent',
+            'legend': { position: 'top' }
+        };
+        
+        // Instantiate and draw the chart
+        var chart = new google.visualization.ColumnChart(document.getElementById('testChart'));
+        chart.draw(data, options);
+        
+        console.log('Google Chart drawn successfully');
+    }
+</script>
+
+<!-- Inline script for basic chart -->
+<script>
+    // Wait for the page to load
+    window.onload = function() {
+        // Get the test chart container
+        var container = document.getElementById('testChart');
+        if (container) {
+            // Create a simple bar chart using DOM elements
+            container.innerHTML = '';
+            container.style.height = '250px';
+            container.style.position = 'relative';
+            
+            // Create chart title
+            var title = document.createElement('h6');
+            title.textContent = 'Simple JavaScript Chart';
+            container.appendChild(title);
+            
+            // Create chart container
+            var chartDiv = document.createElement('div');
+            chartDiv.style.display = 'flex';
+            chartDiv.style.alignItems = 'flex-end';
+            chartDiv.style.height = '200px';
+            chartDiv.style.width = '100%';
+            chartDiv.style.borderBottom = '1px solid #ccc';
+            chartDiv.style.borderLeft = '1px solid #ccc';
+            chartDiv.style.paddingTop = '20px';
+            container.appendChild(chartDiv);
+            
+            // Chart data
+            var data = [
+                { label: 'A', value: 50, color: '#4e73df' },
+                { label: 'B', value: 100, color: '#1cc88a' },
+                { label: 'C', value: 150, color: '#36b9cc' },
+                { label: 'D', value: 80, color: '#f6c23e' },
+                { label: 'E', value: 120, color: '#e74a3b' }
+            ];
+            
+            // Create bars
+            for (var i = 0; i < data.length; i++) {
+                var barContainer = document.createElement('div');
+                barContainer.style.display = 'flex';
+                barContainer.style.flexDirection = 'column';
+                barContainer.style.alignItems = 'center';
+                barContainer.style.marginRight = i < data.length - 1 ? '20px' : '0';
+                
+                var bar = document.createElement('div');
+                bar.style.backgroundColor = data[i].color;
+                bar.style.width = '40px';
+                bar.style.height = data[i].value + 'px';
+                
+                var label = document.createElement('div');
+                label.style.marginTop = '5px';
+                label.textContent = data[i].label;
+                
+                barContainer.appendChild(bar);
+                barContainer.appendChild(label);
+                chartDiv.appendChild(barContainer);
+            }
+            
+            alert('JavaScript chart created successfully');
+        } else {
+            alert('Could not find chart container');
+        }
+    };
+</script>
+{% endblock extra_js %}

@@ -1,0 +1,477 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Staff Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <nav class="col-md-2 d-none d-md-block sidebar">
+            <div class="sidebar-sticky">
+                <div class="text-center mb-4">
+                    <img src="{{ user.profile_image.url|default:'https://via.placeholder.com/80' }}" 
+                         alt="Staff Profile" 
+                         class="staff-logo rounded-circle">
+                    <h4 class="text-white mt-2" style="text-shadow: 1px 1px 3px rgba(0,0,0,0.8);">{{ user.get_full_name }}</h4>
+                    <p class="text-light">{{ user.expertise }}</p>
+                </div>
+                <div class="nav flex-column">
+                    <a class="nav-link {% if active_tab == 'overview' %}active{% endif %}" href="{% url 'User_Management:staff_dashboard' %}">
+                        <i class="fas fa-home mr-2"></i>Overview
+                    </a>
+                    <a class="nav-link {% if active_tab == 'appointments' %}active{% endif %}" href="{% url 'appointments:admin_appointments' %}">
+                        <i class="fas fa-calendar-check mr-2"></i>Appointments
+                    </a>
+                    <a class="nav-link {% if active_tab == 'customers' %}active{% endif %}" href="{% url 'User_Management:customer_list' %}">
+                        <i class="fas fa-users mr-2"></i>My Customers
+                    </a>
+                    <a class="nav-link {% if active_tab == 'profile' %}active{% endif %}" href="{% url 'User_Management:stylist_profile' user.id %}">
+                        <i class="fas fa-user-circle mr-2"></i>My Profile
+                    </a>
+                    <a class="nav-link {% if active_tab == 'notifications' %}active{% endif %}" href="{% url 'notifications:notification_list' %}">
+                        <i class="fas fa-bell mr-2"></i>Notifications
+                        {% if unread_notifications_count %}
+                            <span class="badge badge-danger">{{ unread_notifications_count }}</span>
+                        {% endif %}
+                    </a>
+                    <a class="nav-link text-danger" href="{% url 'User_Management:custom_logout' %}">
+                        <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                    </a>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main role="main" class="col-md-9 ml-sm-auto col-lg-10 px-4">
+            <!-- Overview Cards -->
+            <div class="row mt-4">
+                <div class="col-md-3">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body">
+                            <h5><i class="fas fa-calendar-check mr-2"></i>Today's Appointments</h5>
+                            <h2>{{ today_appointments_count }}</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-success text-white">
+                        <div class="card-body">
+                            <h5><i class="fas fa-check-circle mr-2"></i>Completed</h5>
+                            <h2>{{ completed_appointments_count }}</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-danger text-white">
+                        <div class="card-body">
+                            <h5><i class="fas fa-times-circle mr-2"></i>Cancelled</h5>
+                            <h2>{{ cancelled_appointments_count }}</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-info text-white">
+                        <div class="card-body">
+                            <h5><i class="fas fa-calendar-alt mr-2"></i>Upcoming</h5>
+                            <h2>{{ upcoming_appointments_count }}</h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Appointment Stats -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card shadow">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0"><i class="fas fa-chart-pie mr-2"></i>Appointment Statistics</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="progress-stats mb-4">
+                                        <div class="d-flex justify-content-between mb-1">
+                                            <span>Completed</span>
+                                            <span>{{ completed_appointments_count }} / {{ total_appointments }}</span>
+                                        </div>
+                                        <div class="progress" style="height: 10px;">
+                                            <div class="progress-bar bg-success" role="progressbar" 
+                                                 style="width: {% if total_appointments > 0 %}{% widthratio completed_appointments_count total_appointments 100 %}{% else %}0{% endif %}%;" 
+                                                 aria-valuenow="{{ completed_appointments_count }}" aria-valuemin="0" aria-valuemax="{{ total_appointments }}"></div>
+                                        </div>
+                                    </div>
+                                    <div class="progress-stats mb-4">
+                                        <div class="d-flex justify-content-between mb-1">
+                                            <span>Cancelled</span>
+                                            <span>{{ cancelled_appointments_count }} / {{ total_appointments }}</span>
+                                        </div>
+                                        <div class="progress" style="height: 10px;">
+                                            <div class="progress-bar bg-danger" role="progressbar" 
+                                                 style="width: {% if total_appointments > 0 %}{% widthratio cancelled_appointments_count total_appointments 100 %}{% else %}0{% endif %}%;" 
+                                                 aria-valuenow="{{ cancelled_appointments_count }}" aria-valuemin="0" aria-valuemax="{{ total_appointments }}"></div>
+                                        </div>
+                                    </div>
+                                    <div class="progress-stats">
+                                        <div class="d-flex justify-content-between mb-1">
+                                            <span>Upcoming</span>
+                                            <span>{{ upcoming_appointments_count }} / {{ total_appointments }}</span>
+                                        </div>
+                                        <div class="progress" style="height: 10px;">
+                                            <div class="progress-bar bg-info" role="progressbar" 
+                                                 style="width: {% if total_appointments > 0 %}{% widthratio upcoming_appointments_count total_appointments 100 %}{% else %}0{% endif %}%;" 
+                                                 aria-valuenow="{{ upcoming_appointments_count }}" aria-valuemin="0" aria-valuemax="{{ total_appointments }}"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="text-center">
+                                        <div class="mb-3">
+                                            <h4>Total Appointments</h4>
+                                            <div class="display-4">{{ total_appointments }}</div>
+                                        </div>
+                                        <a href="{% url 'appointments:admin_appointments' %}" class="btn btn-primary">
+                                            <i class="fas fa-list mr-1"></i> View All Appointments
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Today's Appointments -->
+            <div class="card mt-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-calendar-day mr-2"></i>Today's Appointments</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Customer</th>
+                                    <th>Service</th>
+                                    <th>Duration</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for appointment in todays_appointments %}
+                                <tr>
+                                    <td>{{ appointment.time }}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <img src="{{ appointment.customer.profile_image.url|default:'https://via.placeholder.com/32' }}" 
+                                                 class="rounded-circle mr-2" 
+                                                 style="width: 32px; height: 32px;">
+                                            {{ appointment.customer.get_full_name }}
+                                        </div>
+                                    </td>
+                                    <td>{{ appointment.service.name }}</td>
+                                    <td>{{ appointment.service.duration_minutes }} mins</td>
+                                    <td>
+                                        <span class="badge badge-{{ appointment.status_color }}">
+                                            {{ appointment.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-success" 
+                                                onclick="updateStatus('{{ appointment.id }}', 'completed')">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-danger" 
+                                                onclick="updateStatus('{{ appointment.id }}', 'cancelled')">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center">No appointments scheduled for today.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Frequent Customers -->
+            <div class="card mt-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-user-friends mr-2"></i>Frequent Customers</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for customer in frequent_customers %}
+                        <div class="col-md-4 mb-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center mb-3">
+                                        <img src="{{ customer.profile_image.url|default:'https://via.placeholder.com/48' }}" 
+                                             class="rounded-circle mr-3" 
+                                             style="width: 48px; height: 48px;">
+                                        <div>
+                                            <h6 class="mb-0">{{ customer.get_full_name }}</h6>
+                                            <small class="text-muted">{{ customer.visit_count }} visits</small>
+                                        </div>
+                                    </div>
+                                    <p class="mb-0">
+                                        <small class="text-muted">Last visit: {{ customer.last_visit|date }}</small>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Performance Chart -->
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Monthly Performance</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="performanceChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Service Distribution</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="servicesChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Notifications -->
+            <div class="card mt-4">
+                <div class="card-header bg-warning text-white">
+                    <h5 class="mb-0"><i class="fas fa-bell mr-2"></i>Recent Notifications</h5>
+                </div>
+                <div class="card-body">
+                    <div class="notifications-list">
+                        {% for notification in recent_notifications %}
+                        <div class="notification-item {% if not notification.is_read %}unread{% endif %}">
+                            <div class="d-flex align-items-center">
+                                <div class="notification-icon mr-3">
+                                    <i class="fas {{ notification.icon }} fa-lg"></i>
+                                </div>
+                                <div class="notification-content">
+                                    <p class="mb-0">{{ notification.message }}</p>
+                                    <small class="text-muted">{{ notification.created_at|timesince }} ago</small>
+                                </div>
+                                {% if not notification.is_read %}
+                                    <button class="btn btn-sm btn-light ml-auto mark-read" 
+                                            data-notification-id="{{ notification.id }}">
+                                        Mark as read
+                                    </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% empty %}
+                        <p class="text-center text-muted">No new notifications</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Sidebar Styles */
+    .sidebar {
+        background: linear-gradient(to bottom, #343a40, #23272b);
+        min-height: 100vh;
+        box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        padding-top: 20px;
+    }
+    
+    .sidebar-sticky {
+        position: sticky;
+        top: 0;
+        height: calc(100vh - 48px);
+        padding-top: 0.5rem;
+        overflow-x: hidden;
+        overflow-y: auto;
+    }
+    
+    .staff-logo {
+        width: 80px;
+        height: 80px;
+        object-fit: cover;
+        border: 3px solid rgba(255,255,255,0.3);
+    }
+    
+    .sidebar .nav-link {
+        color: rgba(255,255,255,0.75);
+        padding: 0.75rem 1rem;
+        margin: 0.2rem 0;
+        border-radius: 0.25rem;
+        transition: all 0.3s;
+    }
+    
+    .sidebar .nav-link:hover {
+        color: #fff;
+        background-color: rgba(255,255,255,0.1);
+    }
+    
+    .sidebar .nav-link.active {
+        color: #fff;
+        background-color: rgba(0,123,255,0.5);
+    }
+    
+    .sidebar .nav-link i {
+        width: 20px;
+        text-align: center;
+    }
+
+    .notification-item {
+        padding: 1rem;
+        border-bottom: 1px solid #eee;
+    }
+
+    .notification-item:last-child {
+        border-bottom: none;
+    }
+
+    .notification-item.unread {
+        background-color: rgba(0,123,255,0.05);
+    }
+
+    .notification-icon {
+        width: 40px;
+        height: 40px;
+        background: #f8f9fa;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .card {
+        box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
+    }
+
+    .nav-link {
+        color: rgba(255,255,255,0.8);
+        padding: 10px 15px;
+        border-radius: 5px;
+        margin: 5px 15px;
+        transition: all 0.3s;
+    }
+
+    .nav-link:hover, .nav-link.active {
+        color: white;
+        background: rgba(255,255,255,0.1);
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Performance Chart
+const performanceCtx = document.getElementById('performanceChart').getContext('2d');
+new Chart(performanceCtx, {
+    type: 'line',
+    data: {
+        labels: {{ monthly_labels|safe }},
+        datasets: [{
+            label: 'Appointments Completed',
+            data: {{ monthly_completed|safe }},
+            borderColor: 'rgba(40, 167, 69, 1)',
+            backgroundColor: 'rgba(40, 167, 69, 0.1)',
+            fill: true
+        }]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+
+// Services Distribution Chart
+const servicesCtx = document.getElementById('servicesChart').getContext('2d');
+new Chart(servicesCtx, {
+    type: 'doughnut',
+    data: {
+        labels: {{ service_labels|safe }},
+        datasets: [{
+            data: {{ service_counts|safe }},
+            backgroundColor: [
+                'rgba(255, 99, 132, 0.8)',
+                'rgba(54, 162, 235, 0.8)',
+                'rgba(255, 206, 86, 0.8)',
+                'rgba(75, 192, 192, 0.8)',
+                'rgba(153, 102, 255, 0.8)'
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+
+// Handle appointment status updates
+function updateStatus(appointmentId, status) {
+    fetch(`/appointments/${appointmentId}/update-status/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({ status: status })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        }
+    });
+}
+
+// Handle notification read status
+document.querySelectorAll('.mark-read').forEach(button => {
+    button.addEventListener('click', function() {
+        const notificationId = this.dataset.notificationId;
+        fetch(`/notifications/${notificationId}/mark-read/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                this.closest('.notification-item').classList.remove('unread');
+                this.remove();
+            }
+        });
+    });
+});
+</script>
+{% endblock %}
